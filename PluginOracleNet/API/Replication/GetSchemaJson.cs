@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace PluginOracleNet.API.Replication
 {
@@ -10,27 +11,35 @@ namespace PluginOracleNet.API.Replication
             {
                 { "type", "object"},
                 { "properties", new Dictionary<string, object>
+                {
+                    {"SchemaName", new Dictionary<string, string>
                     {
-                        {
-                            "GoldenTableName", new Dictionary<string, string>
-                            {
-                                {"type", "string"},
-                                {"title", "Golden Record Table Name" },
-                                {"description", "Name for gold record table in Oracle"}
-                            }
-                        },
-                        {
-                            "Version", new Dictionary<string, string>
-                            {
-                                {"type","string" },
-                                {"title", "Version Record Bucket Name" },
-                                {"description", "Name for the version record table in Oracle" }
-                            }
-                        }
-                    }
-                }
+                        {"type", "string"},
+                        {"title", "Schema Name"},
+                        {"description", "Name of schema to put golden and version tables into in Oracle .NET"},
+                    }},
+                    {"GoldenTableName", new Dictionary<string, string>
+                    {
+                        {"type", "string"},
+                        {"title", "Golden Record Table Name"},
+                        {"description", "Name for your golden record table in Oracle .NET"},
+                    }},
+                    {"VersionTableName", new Dictionary<string, string>
+                    {
+                        {"type", "string"},
+                        {"title", "Version Record Table Name"},
+                        {"description", "Name for your version record table in Oracle .NET"},
+                    }},
+                }},
+                {"required", new []
+                {
+                    "SchemaName",
+                    "GoldenTableName",
+                    "VersionTableName"
+                }}
             };
-            return null; 
+            
+            return JsonConvert.SerializeObject(schemaJsonObj);
         }
     }
 }

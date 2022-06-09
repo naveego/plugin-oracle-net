@@ -356,8 +356,8 @@ namespace PluginOracleNet.Plugin
             Logger.SetLogPrefix("configure_replication");
             Logger.Info($"Configuring write for schema name {request.Schema.Name}...");
 
-            var schemaJson = Write.GetSchemaJson();
-            var uiJson = Write.GetUIJson();
+            var schemaJson = Replication.GetSchemaJson();
+            var uiJson = Replication.GetUIJson();
 
             try
             {
@@ -371,7 +371,7 @@ namespace PluginOracleNet.Plugin
                     errors = replicationFormData.ValidateReplicationFormData();
                 }
 
-                return Task.FromResult(new ConfigureReplicationResponse
+                return Task.FromResult(new ConfigureReplicationResponse // TODO: Fix Config Repl Error
                 {
                     Form = new ConfigurationFormResponse
                     {
@@ -484,7 +484,7 @@ namespace PluginOracleNet.Plugin
                         // send record to source system
                         // add await for unit testing 
                         // removed to allow multiple to run at the same time
-                        Task.Run(
+                        /*await*/ Task.Run(
                             async () => await Replication.WriteRecordAsync(_connectionFactory, schema, record, config,
                                 responseStream), context.CancellationToken);
                     }
@@ -493,7 +493,7 @@ namespace PluginOracleNet.Plugin
                         // send record to source system
                         // add await for unit testing 
                         // removed to allow multiple to run at the same time
-                        Task.Run(async () =>
+                        /*await*/ Task.Run(async () =>
                                 await Write.WriteRecordAsync(_connectionFactory, schema, record, responseStream),
                             context.CancellationToken);
                     }

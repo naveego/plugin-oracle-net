@@ -17,8 +17,8 @@
   "canUseOAuth": false,
   "canConfigureWrite": true,
   "canWrite": true,
-  "canConfigureReplication": true,
-  "canWriteReplication": true,
+  "canConfigureReplication": false,
+  "canWriteReplication": false,
   "querySchema": {
     "ui": {
       "ui:widget": "code",

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using PluginOracleNet.Helper;
 using PluginOracleNet.DataContracts;
 using Newtonsoft.Json;
@@ -10,7 +8,6 @@ using Xunit;
 using System.Threading.Tasks;
 using Grpc.Core;
 using System.Linq;
-using PluginOracleNet.DataContracts;
 using Record = Naveego.Sdk.Plugins.Record;
 
 namespace PluginOracleNetTest.Plugin
@@ -19,13 +16,13 @@ namespace PluginOracleNetTest.Plugin
     {
         // Test Variables
 
-        private static string TestSchemaID = "\"C##DEMO\".\"ACCOUNTARCHIVE_GHTesting\"";
-        private static string TestSchemaName = "C##DEMO.ACCOUNTARCHIVE_GHTesting";
+        private static string TestSchemaID = "\"<schema_name>\".\"<table_name>\"";
+        private static string TestSchemaName = "<schema_name>.<table_name>";
         private static int TestSampleCount = 10;
         private static int TestPropertyCount = 11;
         
-        private static string TestSchemaID_2 = "\"C##DEMO\".\"SRMData_GHTesting\"";
-        private static string TestSchemaName_2 = "C##DEMO.SRMData_GHTesting";
+        private static string TestSchemaID_2 = "\"<schema_name>\".\"<table2_name>\"";
+        private static string TestSchemaName_2 = "<schema_name>.<table2_name>";
         private static int TestSampleCount_2 = 0;
         private static int TestPropertyCount_2 = 10;
 
@@ -45,7 +42,6 @@ namespace PluginOracleNetTest.Plugin
                 Password = "",
                 Username = "",
                 ServiceName = ""
-                //WalletPath = ""
             };
         }
 
@@ -344,17 +340,18 @@ namespace PluginOracleNetTest.Plugin
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
 
-            const string wrongUsername = "C##ITSALLWRONG";
+            const string wrongUsername = "ITSALLWRONG";
 
             var request = new ConnectRequest
             {
                 SettingsJson = JsonConvert.SerializeObject(new Settings
                 {
-                    Hostname = "150.136.171.142",
-                    Port = "1521",
-                    Password = "mXNkJwXG839a",
+                    // TODO: Enter same info from GetSettings() w/ wrongUsername as Username
+                    Hostname = "",
+                    Port = "",
+                    Password = "",
                     Username = wrongUsername,
-                    ServiceName = "ORCLCDB.localdomain"
+                    ServiceName = ""
                 }),
                 OauthConfiguration = new OAuthConfiguration(),
                 OauthStateJson = ""
@@ -405,7 +402,7 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(18, response.Schemas.Count);
+            Assert.Equal(22, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             //var schema = response.Schemas[0];
@@ -413,7 +410,7 @@ namespace PluginOracleNetTest.Plugin
 
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal($"", schema.Query);
+            Assert.Equal("", schema.Query);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -649,7 +646,7 @@ namespace PluginOracleNetTest.Plugin
             }
 
             // assert
-            Assert.Equal(421, records.Count);
+            Assert.Equal(424, records.Count);
 
             var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
             // Assert.Equal("3", record["\"CHANNEL_ID\""]);
@@ -723,7 +720,7 @@ namespace PluginOracleNetTest.Plugin
             }
 
             // assert
-            Assert.Equal(421, records.Count);
+            Assert.Equal(424, records.Count);
 
             var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
             // Assert.Equal("3", record["\"CHANNEL_ID\""]);
@@ -1001,33 +998,32 @@ namespace PluginOracleNetTest.Plugin
 
             var records = new List<Record>()
             {
+                new Record
                 {
-                    new Record
+                    Action = Record.Types.Action.Upsert,
+                    CorrelationId = "test",
+                    RecordId = "record1",
+                    //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}",
+                    DataJson = @"{
+    ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
+    ""FIRST_NAME"":""Test"",
+    ""LAST_NAME"":""Second"",
+    ""EMAIL"":""test.second@email.net"",
+    ""ADDRESS"":""5678 Test Road"",
+    ""CITY"":""Test"",
+    ""STATE"":""MI"",
+    ""ZIP"":""91952"",
+    ""GENERAL_LEDGER"":""11190"",
+    ""BALANCE"":""1.00"",
+    ""REP"":""Ron Jordans""
+}".Replace("\n", ""),
+                    Versions =
                     {
-                        Action = Record.Types.Action.Upsert,
-                        CorrelationId = "ACCOUNTARCHIVE_GHTesting",
-                        RecordId = "record1",
-                        //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}",
-                        DataJson = $@"{{
-    ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
-    ""FIRST_NAME"":""Test"",
-    ""LAST_NAME"":""Second"",
-    ""EMAIL"":""test.second@email.net"",
-    ""ADDRESS"":""5678 Test Road"",
-    ""CITY"":""Test"",
-    ""STATE"":""MI"",
-    ""ZIP"":""91952"",
-    ""GENERAL_LEDGER"":""11190"",
-    ""BALANCE"":""1.00"",
-    ""REP"":""Ron Jordans""
-}}".Replace("\n", ""),
-                        Versions =
+                        new RecordVersion
                         {
-                            new RecordVersion
-                            {
-                                RecordId = "version1",
-                                //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}"
-                                DataJson = $@"{{
+                            RecordId = "version1",
+                            //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}"
+                            DataJson = @"{
     ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
     ""FIRST_NAME"":""Test"",
     ""LAST_NAME"":""Second"",
@@ -1039,8 +1035,7 @@ namespace PluginOracleNetTest.Plugin
     ""GENERAL_LEDGER"":""11190"",
     ""BALANCE"":""1.00"",
     ""REP"":""Ron Jordans""
-}}".Replace("\n", "")
-                            }
+}".Replace("\n", "")
                         }
                     }
                 }
@@ -1075,7 +1070,7 @@ namespace PluginOracleNetTest.Plugin
             // assert
             Assert.Single(recordAcks);
             Assert.Equal("", recordAcks[0].Error);
-            Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
+            Assert.Equal("test", recordAcks[0].CorrelationId);
 
             // cleanup
             await channel.ShutdownAsync();

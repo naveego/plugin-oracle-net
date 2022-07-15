@@ -346,7 +346,7 @@ namespace PluginOracleNetTest.Plugin
             {
                 SettingsJson = JsonConvert.SerializeObject(new Settings
                 {
-                    // TODO: Enter same info from GetSettings() w/wrongUsername as Username
+                    // When testing, enter same info from GetSettings() w/wrongUsername as Username
                     Hostname = "",
                     Port = "",
                     Password = wrongUsername,

@@ -21,10 +21,10 @@ namespace PluginOracleNetTest.Plugin
         private static int TestSampleCount = 10;
         private static int TestPropertyCount = 11;
         
-        private static string TestSchemaID_2 = "\"<schema_name>\".\"<table2_name>\"";
-        private static string TestSchemaName_2 = "<schema_name>.<table2_name>";
-        private static int TestSampleCount_2 = 0;
-        private static int TestPropertyCount_2 = 10;
+        private static string TestSchemaID_2 = "\"<schema_name>\".\"<table_name>02\"";
+        private static string TestSchemaName_2 = "<schema_name>.<table_name>02";
+        private static int TestSampleCount_2 = 10;
+        private static int TestPropertyCount_2 = 11;
 
         private static string TestPropertyID = "\"ID\"";
         private static string TestPropertyName = "ID";
@@ -346,11 +346,11 @@ namespace PluginOracleNetTest.Plugin
             {
                 SettingsJson = JsonConvert.SerializeObject(new Settings
                 {
-                    // TODO: Enter same info from GetSettings() w/ wrongUsername as Username
+                    // TODO: Enter same info from GetSettings() w/wrongUsername as Username
                     Hostname = "",
                     Port = "",
-                    Password = "",
-                    Username = wrongUsername,
+                    Password = wrongUsername,
+                    Username = "",
                     ServiceName = ""
                 }),
                 OauthConfiguration = new OAuthConfiguration(),
@@ -428,7 +428,7 @@ namespace PluginOracleNetTest.Plugin
 
             Assert.Equal(TestSchemaID_2, schema2.Id);
             Assert.Equal(TestSchemaName_2, schema2.Name);
-            Assert.Equal($"", schema2.Query);
+            Assert.Equal("", schema2.Query);
             Assert.Equal(TestSampleCount_2, schema2.Sample.Count);
             Assert.Equal(TestPropertyCount_2, schema2.Properties.Count);
 
@@ -595,8 +595,8 @@ namespace PluginOracleNetTest.Plugin
             await channel.ShutdownAsync();
             await server.ShutdownAsync();
         }
-
-                [Fact]
+        
+        [Fact]
         public async Task ReadStreamTableSchemaTest()
         {
             // setup

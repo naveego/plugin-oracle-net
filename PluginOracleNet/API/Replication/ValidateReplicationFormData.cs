@@ -18,7 +18,7 @@ namespace PluginOracleNet.API.Replication
 
         private static readonly string SchemaPermissonsCmd = @"
 SELECT COUNT(*)
-  FROM DBA_TAB_PRIVS
+  FROM ""SYS"".""DBA_TAB_PRIVS""
   WHERE GRANTEE = '{0}'
     AND PRIVILEGE = 'SELECT'
     AND TABLE_NAME IN ('ALL_TABLES', 'ALL_TAB_COLUMNS',

@@ -79,7 +79,7 @@ SELECT COUNT(*)
                     throw OracleReaderFailedException;
                 }
                 
-                var schemaExists = (int)reader.GetValueById("C") > 0;
+                var schemaExists = (decimal)reader.GetValueById("C") > 0;
 
                 if (!schemaExists)
                 {
@@ -99,7 +99,7 @@ SELECT COUNT(*)
                     throw OracleReaderFailedException;
                 }
                 
-                var schemaHasPermissions = (int)reader2.GetValueById("C") >= 5;
+                var schemaHasPermissions = (decimal)reader2.GetValueById("C") >= 5;
 
                 if (!schemaHasPermissions)
                 {

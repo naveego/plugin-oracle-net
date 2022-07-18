@@ -359,7 +359,6 @@ namespace PluginOracleNet.Plugin
 
             var schemaJson = Replication.GetSchemaJson();
             var uiJson = Replication.GetUIJson();
-            var testingFormData = "F";
 
             try
             {
@@ -374,14 +373,8 @@ namespace PluginOracleNet.Plugin
 
                     if (errors.Count <= 0)
                     {
-                        testingFormData = "T";
                         errors = await Replication.TestReplicationFormData(replicationFormData, _connectionFactory);
                     }
-                }
-
-                if (errors.Count > 0)
-                {
-                    errors.Add($"Testing = {testingFormData}");
                 }
 
                 return new ConfigureReplicationResponse
@@ -389,7 +382,7 @@ namespace PluginOracleNet.Plugin
                     Form = new ConfigurationFormResponse
                     {
                         DataJson = request.Form.DataJson,
-                        Errors = { errors, $"Testing = {testingFormData}" },
+                        Errors = { errors },
                         SchemaJson = schemaJson,
                         UiJson = uiJson,
                         StateJson = request.Form.StateJson
@@ -405,7 +398,7 @@ namespace PluginOracleNet.Plugin
                     Form = new ConfigurationFormResponse
                     {
                         DataJson = request.Form.DataJson,
-                        Errors = { e.Message, $"Testing = {testingFormData}", e.StackTrace },
+                        Errors = { e.Message, e.StackTrace },
                         SchemaJson = schemaJson,
                         UiJson = uiJson,
                         StateJson = request.Form.StateJson

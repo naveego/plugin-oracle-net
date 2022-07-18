@@ -24,6 +24,9 @@ SELECT COUNT(*)
     AND TABLE_NAME IN ('ALL_TABLES', 'ALL_TAB_COLUMNS',
         'ALL_CONS_COLUMNS', 'DBA_OBJECTS', 'DBA_TABLES')
 ".Replace("\n", " ").Replace("  ", " ");
+
+        private static readonly Exception OracleReaderFailedException =
+            new Exception("Command execution failed. No results from query.");
         
         public static async Task<List<string>> ValidateReplicationFormData(this ConfigureReplicationFormData data)
         {
@@ -65,11 +68,17 @@ SELECT COUNT(*)
             {
                 await conn.OpenAsync();
 
-                // 1) schema does not exist
+                // Case 1) schema does not exist
                 var schemaExistsCmd = connFactory.GetCommand(
                     string.Format(SchemaExistsCmd, data.SchemaName.ToAllCaps()), conn);
 
                 var reader = await schemaExistsCmd.ExecuteReaderAsync();
+                if (!await reader.ReadAsync())
+                {
+                    // goto catch if failed to read
+                    throw OracleReaderFailedException;
+                }
+                
                 var schemaExists = (int)reader.GetValueById("C") > 0;
 
                 if (!schemaExists)
@@ -79,16 +88,22 @@ SELECT COUNT(*)
 
                 existsCheckDone = true;
 
-                // 2) schema w/o select permissions for all system databases
+                // Case 2) schema w/o select permissions for all system databases
                 var schemaHasPmnsCmd = connFactory.GetCommand(
                     string.Format(SchemaPermissonsCmd, data.SchemaName.ToAllCaps()), conn);
 
                 var reader2 = await schemaHasPmnsCmd.ExecuteReaderAsync();
+                if (!await reader2.ReadAsync())
+                {
+                    // goto catch if failed to read
+                    throw OracleReaderFailedException;
+                }
+                
                 var schemaHasPermissions = (int)reader2.GetValueById("C") >= 5;
 
                 if (!schemaHasPermissions)
                 {
-                    errors.Add($"The user associated with the connection does not have proper access to the database.");
+                    errors.Add("The user associated with the connection does not have proper access to the database.");
                 }
             }
             catch (OracleException o)
@@ -105,7 +120,7 @@ SELECT COUNT(*)
             }
             catch (Exception e)
             {
-                errors.Add($"{e.Message}\n{e.StackTrace}");
+                errors.Add(e.Message);
             }
             finally
             {

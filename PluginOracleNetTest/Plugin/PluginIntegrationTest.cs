@@ -16,13 +16,13 @@ namespace PluginOracleNetTest.Plugin
     {
         // Test Variables
 
-        private static string TestSchemaID = "\"<schema_name>\".\"<table_name>\"";
-        private static string TestSchemaName = "<schema_name>.<table_name>";
+        private static string TestSchemaID = "\"C##DEMO\".\"ACCOUNTARCHIVE_GHTesting\"";
+        private static string TestSchemaName = "C##DEMO.ACCOUNTARCHIVE_GHTesting";
         private static int TestSampleCount = 10;
         private static int TestPropertyCount = 11;
         
-        private static string TestSchemaID_2 = "\"<schema_name>\".\"<table_name>02\"";
-        private static string TestSchemaName_2 = "<schema_name>.<table_name>02";
+        private static string TestSchemaID_2 = "\"C##DEMO\".\"ACCOUNTARCHIVE_GHTesting02\"";
+        private static string TestSchemaName_2 = "C##DEMO.ACCOUNTARCHIVE_GHTesting02";
         private static int TestSampleCount_2 = 10;
         private static int TestPropertyCount_2 = 11;
 
@@ -346,11 +346,11 @@ namespace PluginOracleNetTest.Plugin
             {
                 SettingsJson = JsonConvert.SerializeObject(new Settings
                 {
-                    // When testing, enter same info from GetSettings() w/wrongUsername as Username
+                    // When testing, enter same info from GetSettings() w/ wrongUsername as Username
                     Hostname = "",
                     Port = "",
-                    Password = wrongUsername,
-                    Username = "",
+                    Password = "",
+                    Username = wrongUsername,
                     ServiceName = ""
                 }),
                 OauthConfiguration = new OAuthConfiguration(),
@@ -402,7 +402,7 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(22, response.Schemas.Count);
+            Assert.Equal(36, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             //var schema = response.Schemas[0];
@@ -482,7 +482,7 @@ namespace PluginOracleNetTest.Plugin
             var schema = response.Schemas[0];
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal($"", schema.Query);
+            Assert.Equal("", schema.Query);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -852,7 +852,7 @@ namespace PluginOracleNetTest.Plugin
             await channel.ShutdownAsync();
             await server.ShutdownAsync();
         }
-        
+
         [Fact]
         public async Task WriteTest()
         {

@@ -25,11 +25,10 @@ SELECT COUNT(*)
         'ALL_CONS_COLUMNS', 'DBA_OBJECTS', 'DBA_TABLES')
 ".Replace("\n", " ").Replace("  ", " ");
         
-        public static async Task<List<string>> ValidateReplicationFormData(this ConfigureReplicationFormData data, IConnectionFactory connFactory)
+        public static async Task<List<string>> ValidateReplicationFormData(this ConfigureReplicationFormData data)
         {
             var errors = new List<string>();
-            var existsCheckDone = false;
-
+            
             // 1) null or whitespace error cases
             if (string.IsNullOrWhiteSpace(data.SchemaName))
             {
@@ -51,61 +50,66 @@ SELECT COUNT(*)
             {
                 errors.Add("Golden Record Table and Version Record table cannot have the same name.");
             }
+            
+            return errors;
+        }
+        
+        public static async Task<List<string>> TestReplicationFormData(ConfigureReplicationFormData data, IConnectionFactory connFactory)
+        {
+            var errors = new List<string>();
+            var existsCheckDone = false;
 
-            if (errors.Count == 0) // proceed only if previous errors are dealt with
+            var conn = connFactory.GetConnection();
+
+            try
             {
-                var conn = connFactory.GetConnection();
+                await conn.OpenAsync();
 
-                try
+                // 1) schema does not exist
+                var schemaExistsCmd = connFactory.GetCommand(
+                    string.Format(SchemaExistsCmd, data.SchemaName.ToAllCaps()), conn);
+
+                var reader = await schemaExistsCmd.ExecuteReaderAsync();
+                var schemaExists = (int)reader.GetValueById("C") > 0;
+
+                if (!schemaExists)
                 {
-                    await conn.OpenAsync();
-
-                    // 3) schema does not exist
-                    var schemaExistsCmd = connFactory.GetCommand(
-                        string.Format(SchemaExistsCmd, data.SchemaName.ToAllCaps()), conn);
-
-                    var reader = await schemaExistsCmd.ExecuteReaderAsync();
-                    var schemaExists = (int)reader.GetValueById("C") > 0;
-
-                    if (!schemaExists)
-                    {
-                        errors.Add($"Schema \"{data.SchemaName}\" does not exist in the target database.");
-                    }
-
-                    existsCheckDone = true;
-
-                    // 4) schema w/o select permissions for all system databases
-                    var schemaHasPmns1Cmd = connFactory.GetCommand(
-                        string.Format(SchemaPermissonsCmd, data.SchemaName.ToAllCaps()), conn);
-
-                    var reader2 = await schemaHasPmns1Cmd.ExecuteReaderAsync();
-                    var schemaHasPerms1 = (int)reader2.GetValueById("C") >= 5;
-
-                    if (!schemaHasPerms1)
-                    {
-                        errors.Add($"The user associated with the connection does not have proper access to the database.");
-                    }
+                    errors.Add($"Schema \"{data.SchemaName}\" does not exist in the target database.");
                 }
-                catch (OracleException o)
+
+                existsCheckDone = true;
+
+                // 2) schema w/o select permissions for all system databases
+                var schemaHasPmnsCmd = connFactory.GetCommand(
+                    string.Format(SchemaPermissonsCmd, data.SchemaName.ToAllCaps()), conn);
+
+                var reader2 = await schemaHasPmnsCmd.ExecuteReaderAsync();
+                var schemaHasPermissions = (int)reader2.GetValueById("C") >= 5;
+
+                if (!schemaHasPermissions)
                 {
-                    if (o.Message.Contains("ORA-01031: "))
-                    {
-                        errors.Add("The user associated with the connection does not have proper access to the database.");
-                    }
-                    else
-                    {
-                        var stage = existsCheckDone ? "checking user permissions" : "finding the schema";
-                        errors.Add($"An error occured when {stage}:");
-                    }
+                    errors.Add($"The user associated with the connection does not have proper access to the database.");
                 }
-                catch (Exception e)
+            }
+            catch (OracleException o)
+            {
+                if (o.Message.Contains("ORA-01031: "))
                 {
-                    errors.Add(e.Message);
+                    errors.Add("The user associated with the connection does not have proper access to the database.");
                 }
-                finally
+                else
                 {
-                    await conn.CloseAsync();
+                    var stage = existsCheckDone ? "checking user permissions" : "finding the schema";
+                    errors.Add($"An error occured when {stage}:\n{o.Message}");
                 }
+            }
+            catch (Exception e)
+            {
+                errors.Add($"{e.Message}\n{e.StackTrace}");
+            }
+            finally
+            {
+                await conn.CloseAsync();
             }
 
             return errors;

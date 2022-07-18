@@ -359,6 +359,7 @@ namespace PluginOracleNet.Plugin
 
             var schemaJson = Replication.GetSchemaJson();
             var uiJson = Replication.GetUIJson();
+            var testingFormData = "F";
 
             try
             {
@@ -369,7 +370,18 @@ namespace PluginOracleNet.Plugin
                     var replicationFormData =
                         JsonConvert.DeserializeObject<ConfigureReplicationFormData>(request.Form.DataJson);
 
-                    errors = await replicationFormData.ValidateReplicationFormData(_connectionFactory);
+                    errors = await replicationFormData.ValidateReplicationFormData();
+
+                    if (errors.Count <= 0)
+                    {
+                        testingFormData = "T";
+                        errors = await Replication.TestReplicationFormData(replicationFormData, _connectionFactory);
+                    }
+                }
+
+                if (errors.Count > 0)
+                {
+                    errors.Add($"Testing = {testingFormData}");
                 }
 
                 return new ConfigureReplicationResponse
@@ -377,7 +389,7 @@ namespace PluginOracleNet.Plugin
                     Form = new ConfigurationFormResponse
                     {
                         DataJson = request.Form.DataJson,
-                        Errors = { errors },
+                        Errors = { errors, $"Testing = {testingFormData}" },
                         SchemaJson = schemaJson,
                         UiJson = uiJson,
                         StateJson = request.Form.StateJson
@@ -393,7 +405,7 @@ namespace PluginOracleNet.Plugin
                     Form = new ConfigurationFormResponse
                     {
                         DataJson = request.Form.DataJson,
-                        Errors = { e.Message },
+                        Errors = { e.Message, $"Testing = {testingFormData}", e.StackTrace },
                         SchemaJson = schemaJson,
                         UiJson = uiJson,
                         StateJson = request.Form.StateJson

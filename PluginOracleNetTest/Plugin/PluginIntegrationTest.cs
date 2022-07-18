@@ -8,6 +8,8 @@ using Xunit;
 using System.Threading.Tasks;
 using Grpc.Core;
 using System.Linq;
+using PluginOracleNet.API.Factory;
+using PluginOracleNet.API.Replication;
 using Record = Naveego.Sdk.Plugins.Record;
 
 namespace PluginOracleNetTest.Plugin
@@ -16,13 +18,13 @@ namespace PluginOracleNetTest.Plugin
     {
         // Test Variables
 
-        private static string TestSchemaID = "\"C##DEMO\".\"ACCOUNTARCHIVE_GHTesting\"";
-        private static string TestSchemaName = "C##DEMO.ACCOUNTARCHIVE_GHTesting";
+        private static string TestSchemaID = "\"<schema_name>\".\"<table_name>\"";
+        private static string TestSchemaName = "<schema_name>.<table_name>";
         private static int TestSampleCount = 10;
         private static int TestPropertyCount = 11;
         
-        private static string TestSchemaID_2 = "\"C##DEMO\".\"ACCOUNTARCHIVE_GHTesting02\"";
-        private static string TestSchemaName_2 = "C##DEMO.ACCOUNTARCHIVE_GHTesting02";
+        private static string TestSchemaID_2 = "\"<schema_name>\".\"<table_name>02\"";
+        private static string TestSchemaName_2 = "<schema_name>.<table_name>02";
         private static int TestSampleCount_2 = 10;
         private static int TestPropertyCount_2 = 11;
 
@@ -595,6 +597,33 @@ namespace PluginOracleNetTest.Plugin
             await channel.ShutdownAsync();
             await server.ShutdownAsync();
         }
+
+        // [Fact]
+        // public async Task ValidateReplicationFormDataTest()
+        // {
+        //     // setup
+        //     var replicationFormData = new ConfigureReplicationFormData
+        //     {
+        //         SchemaName = "C##DEMO002",
+        //         GoldenTableName = "gr_test",
+        //         VersionTableName = "vr_test"
+        //     };
+        //     
+        //     Server server = new Server
+        //     {
+        //         Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
+        //         Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
+        //     };
+        //     server.Start();
+        //
+        //     var port = server.Ports.First().BoundPort;
+        //
+        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+        //     var client = new Publisher.PublisherClient(channel);
+        //
+        //     var connectRequest = GetConnectSettings();
+        //     client.Connect(connectRequest);
+        // }
         
         [Fact]
         public async Task ReadStreamTableSchemaTest()

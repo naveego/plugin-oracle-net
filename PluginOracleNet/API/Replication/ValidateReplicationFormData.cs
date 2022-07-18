@@ -103,14 +103,14 @@ SELECT COUNT(*)
 
                 if (!schemaHasPermissions)
                 {
-                    errors.Add("The user associated with the connection does not have proper access to the database.");
+                    errors.Add("The user specified with the connection does not have proper access to the database.");
                 }
             }
             catch (OracleException o)
             {
-                if (o.Message.Contains("ORA-01031: "))
+                if (o.Message.Contains("ORA-01031: ") || o.Message.Contains("ORA-00942: "))
                 {
-                    errors.Add("The user associated with the connection does not have proper access to the database.");
+                    errors.Add("The user specified with the connection does not have proper access to the database.");
                 }
                 else
                 {

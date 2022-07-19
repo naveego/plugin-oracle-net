@@ -110,23 +110,23 @@ namespace PluginOracleNet.API.Replication
             }
             
             // Case 2) schema w/o privileges for all system databases
-            // --- Action: Attempt to create and then drop the validation table
+            // --- Action: Attempt to create, upsert data into, and then drop the validation table
             if (existsCheckSuccess)
             {
                 try
                 {
                     await EnsureTableAsync(connFactory, validationTable);
 
-                    var testValue = $"{DateTime.Now:yyyy-MM-dd hh:mm:ss tt zz}";
-                    
                     await UpsertRecordAsync(connFactory, validationTable, new Dictionary<string, object>
                     {
-                        { "testValueId", testValue }
+                        { "TestingJobId", "testValue" }
                     });
                     
-                    await RecordExistsAsync(connFactory, validationTable, "testValueId");
+                    await RecordExistsAsync(connFactory, validationTable, "testValue");
 
-                    await GetRecordAsync(connFactory, validationTable, "testValueId");
+                    await GetRecordAsync(connFactory, validationTable, "testValue");
+
+                    await DeleteRecordAsync(connFactory, validationTable, "testValue");
 
                     await DropTableAsync(connFactory, validationTable);
                 }

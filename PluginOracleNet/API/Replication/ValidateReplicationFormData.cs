@@ -16,14 +16,12 @@ namespace PluginOracleNet.API.Replication
         private static readonly string SchemaExistsCmd =
             "SELECT COUNT(DISTINCT username) as C FROM all_users WHERE username = '{0}' ORDER BY username";
 
-        private static readonly string SchemaPermissonsCmd = @"
-SELECT COUNT(*)
+        private static readonly string SchemaPermissonsCmd = @"SELECT COUNT(*) as C
   FROM ""SYS"".""DBA_TAB_PRIVS""
   WHERE GRANTEE = '{0}'
     AND PRIVILEGE = 'SELECT'
     AND TABLE_NAME IN ('ALL_TABLES', 'ALL_TAB_COLUMNS',
-        'ALL_CONS_COLUMNS', 'DBA_OBJECTS', 'DBA_TABLES')
-".Replace("\n", " ").Replace("  ", " ");
+        'ALL_CONS_COLUMNS', 'DBA_OBJECTS', 'DBA_TABLES')";
 
         private static readonly Exception OracleReaderFailedException =
             new Exception("Command execution failed. No results from query.");

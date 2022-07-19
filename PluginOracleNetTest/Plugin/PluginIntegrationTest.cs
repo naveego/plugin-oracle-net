@@ -33,10 +33,6 @@ namespace PluginOracleNetTest.Plugin
 
         private Settings GetSettings()
         {
-            //var settingsFile = System.IO.File.ReadAllText("C:\\Temp\\OracleServerSettings.json");
-            //Settings settings = JsonConvert.DeserializeObject<Settings>(settingsFile);
-            //return settings;
-
             return new Settings
             {
                 Hostname = "",
@@ -180,78 +176,6 @@ namespace PluginOracleNetTest.Plugin
                         Type = PropertyType.String,
                         IsKey = false
                     }
-                    /*new Property
-                    {
-                        Id = "LASTNAME",
-                        Name = "LASTNAME",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "FIRSTNAME",
-                        Name = "FIRSTNAME",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "ADDRESS",
-                        Name = "ADDRESS",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "CITY",
-                        Name = "CITY",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "PERSONID",
-                        Name = "PERSONID",
-                        Type = PropertyType.Integer,
-                        IsKey = true
-                    }*/
-                    /*new Property
-                    {
-                        Id = "Id",
-                        Name = "Id",
-                        Type = PropertyType.Integer,
-                        IsKey = true
-                    },
-                    new Property
-                    {
-                        Id = "Name",
-                        Name = "Name",
-                        Type = PropertyType.String
-                    },
-                    new Property
-                    {
-                        Id = "DateTime",
-                        Name = "DateTime",
-                        Type = PropertyType.Datetime
-                    },
-                    new Property
-                    {
-                        Id = "Date",
-                        Name = "Date",
-                        Type = PropertyType.Date
-                    },
-                    new Property
-                    {
-                        Id = "Time",
-                        Name = "Time",
-                        Type = PropertyType.Time
-                    },
-                    new Property
-                    {
-                        Id = "Decimal",
-                        Name = "Decimal",
-                        Type = PropertyType.Decimal
-                    },*/
                 }
             };
         }
@@ -407,7 +331,6 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal(36, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
-            //var schema = response.Schemas[0];
             var schema = response.Schemas[1]; // Use testing table
 
             Assert.Equal(TestSchemaID, schema.Id);
@@ -598,33 +521,6 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
 
-        // [Fact]
-        // public async Task ValidateReplicationFormDataTest()
-        // {
-        //     // setup
-        //     var replicationFormData = new ConfigureReplicationFormData
-        //     {
-        //         SchemaName = "C##DEMO002",
-        //         GoldenTableName = "gr_test",
-        //         VersionTableName = "vr_test"
-        //     };
-        //     
-        //     Server server = new Server
-        //     {
-        //         Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
-        //         Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
-        //     };
-        //     server.Start();
-        //
-        //     var port = server.Ports.First().BoundPort;
-        //
-        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-        //     var client = new Publisher.PublisherClient(channel);
-        //
-        //     var connectRequest = GetConnectSettings();
-        //     client.Connect(connectRequest);
-        // }
-        
         [Fact]
         public async Task ReadStreamTableSchemaTest()
         {
@@ -678,12 +574,6 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal(424, records.Count);
 
             var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
-            // Assert.Equal("3", record["\"CHANNEL_ID\""]);
-            // Assert.Equal("Direct Sales", record["\"CHANNEL_DESC\""]);
-            // Assert.Equal("Direct", record["\"CHANNEL_CLASS\""]);
-            // Assert.Equal("12", record["\"CHANNEL_CLASS_ID\""]);
-            // Assert.Equal("Channel total", record["\"CHANNEL_TOTAL\""]);
-            // Assert.Equal("1", record["\"CHANNEL_TOTAL_ID\""]);
             Assert.Equal("dc6fdfef-812c-4c98-93cd-a4f839416c99", record["\"ID\""]);
             Assert.Equal("Arlette", record["\"FIRST_NAME\""]);
             Assert.Equal("Stopher", record["\"LAST_NAME\""]);
@@ -698,7 +588,7 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
 
-                [Fact]
+        [Fact]
         public async Task ReadStreamQuerySchemaTest()
         {
             // setup
@@ -714,7 +604,6 @@ namespace PluginOracleNetTest.Plugin
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
 
-            //var schema = GetTestSchema("test", "test", $"SELECT * FROM \"C##DEMO\".\"ACCOUNTARCHIVE\"");
             var schema = GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}");
             
             var connectRequest = GetConnectSettings();
@@ -752,12 +641,6 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal(424, records.Count);
 
             var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
-            // Assert.Equal("3", record["\"CHANNEL_ID\""]);
-            // Assert.Equal("Direct Sales", record["\"CHANNEL_DESC\""]);
-            // Assert.Equal("Direct", record["\"CHANNEL_CLASS\""]);
-            // Assert.Equal("12", record["\"CHANNEL_CLASS_ID\""]);
-            // Assert.Equal("Channel total", record["\"CHANNEL_TOTAL\""]);
-            // Assert.Equal("1", record["\"CHANNEL_TOTAL_ID\""]);
             Assert.Equal("dc6fdfef-812c-4c98-93cd-a4f839416c99", record["\"ID\""]);
             Assert.Equal("Arlette", record["\"FIRST_NAME\""]);
             Assert.Equal("Stopher", record["\"LAST_NAME\""]);

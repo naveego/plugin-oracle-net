@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Oracle.ManagedDataAccess.Client;
@@ -115,6 +116,18 @@ namespace PluginOracleNet.API.Replication
                 try
                 {
                     await EnsureTableAsync(connFactory, validationTable);
+
+                    var testValue = $"{DateTime.Now:yyyy-MM-dd hh:mm:ss tt zz}";
+                    
+                    await UpsertRecordAsync(connFactory, validationTable, new Dictionary<string, object>
+                    {
+                        { "testValueId", testValue }
+                    });
+                    
+                    await RecordExistsAsync(connFactory, validationTable, "testValueId");
+
+                    await GetRecordAsync(connFactory, validationTable, "testValueId");
+
                     await DropTableAsync(connFactory, validationTable);
                 }
                 catch (Exception e)

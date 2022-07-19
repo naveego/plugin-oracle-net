@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Oracle.ManagedDataAccess.Client;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.API.Utility;
@@ -15,13 +16,6 @@ namespace PluginOracleNet.API.Replication
     {
         private static readonly string SchemaExistsCmd =
             "SELECT COUNT(DISTINCT username) as C FROM all_users WHERE username = '{0}' ORDER BY username";
-
-        private static readonly string SchemaPermissonsCmd = @"SELECT COUNT(*) as C
-  FROM ""SYS"".""DBA_TAB_PRIVS""
-  WHERE GRANTEE = '{0}'
-    AND PRIVILEGE = 'SELECT'
-    AND TABLE_NAME IN ('ALL_TABLES', 'ALL_TAB_COLUMNS',
-        'ALL_CONS_COLUMNS', 'DBA_OBJECTS', 'DBA_TABLES')";
 
         private static readonly Exception OracleReaderFailedException =
             new Exception("Command execution failed. No results from query.");
@@ -58,15 +52,22 @@ namespace PluginOracleNet.API.Replication
         public static async Task<List<string>> TestReplicationFormData(ConfigureReplicationFormData data, IConnectionFactory connFactory)
         {
             var errors = new List<string>();
-            var existsCheckDone = false;
+            var existsCheckSuccess = false;
+            
+            var validationTable = new ReplicationTable
+            {
+                SchemaName = data.SchemaName.ToAllCaps(),
+                TableName = Constants.ReplicationValidationTableName,
+                Columns = Constants.ReplicationValidationColumns
+            };
 
             var conn = connFactory.GetConnection();
 
+            // Case 1) schema does not exist
             try
             {
                 await conn.OpenAsync();
-
-                // Case 1) schema does not exist
+                
                 var schemaExistsCmd = connFactory.GetCommand(
                     string.Format(SchemaExistsCmd, data.SchemaName.ToAllCaps()), conn);
 
@@ -84,25 +85,7 @@ namespace PluginOracleNet.API.Replication
                     errors.Add($"Schema \"{data.SchemaName}\" does not exist in the target database.");
                 }
 
-                existsCheckDone = true;
-
-                // Case 2) schema w/o select permissions for all system databases
-                var schemaHasPmnsCmd = connFactory.GetCommand(
-                    string.Format(SchemaPermissonsCmd, data.SchemaName.ToAllCaps()), conn);
-
-                var reader2 = await schemaHasPmnsCmd.ExecuteReaderAsync();
-                if (!await reader2.ReadAsync())
-                {
-                    // goto catch if failed to read
-                    throw OracleReaderFailedException;
-                }
-                
-                var schemaHasPermissions = (decimal)reader2.GetValueById("C") >= 5;
-
-                if (!schemaHasPermissions)
-                {
-                    errors.Add("The user specified with the connection does not have proper access to the database.");
-                }
+                existsCheckSuccess = true;
             }
             catch (OracleException o)
             {
@@ -112,7 +95,7 @@ namespace PluginOracleNet.API.Replication
                 }
                 else
                 {
-                    var stage = existsCheckDone ? "checking user permissions" : "finding the schema";
+                    var stage = existsCheckSuccess ? "checking user permissions" : "detecting the schema";
                     errors.Add($"An error occured when {stage}:\n{o.Message}");
                 }
             }
@@ -123,6 +106,21 @@ namespace PluginOracleNet.API.Replication
             finally
             {
                 await conn.CloseAsync();
+            }
+            
+            // Case 2) schema w/o privileges for all system databases
+            // --- Action: Attempt to create and then drop the validation table
+            if (existsCheckSuccess)
+            {
+                try
+                {
+                    await EnsureTableAsync(connFactory, validationTable);
+                    await DropTableAsync(connFactory, validationTable);
+                }
+                catch (Exception e)
+                {
+                    errors.Add($"Unable to create test table: {e.Message}");
+                }
             }
 
             return errors;

@@ -85,8 +85,8 @@ namespace PluginOracleNet.API.Replication
                 {
                     errors.Add($"Schema \"{data.SchemaName}\" does not exist in the target database.");
                 }
-
-                existsCheckSuccess = true;
+                else
+                    existsCheckSuccess = true;
             }
             catch (OracleException o)
             {

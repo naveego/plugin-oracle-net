@@ -47,15 +47,6 @@ WHERE t.TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
                 await conn.OpenAsync();
 
                 // // create schema if not exists
-                // Logger.Info($"Creating Schema... {table.SchemaName}");
-                // var cmd = connFactory.GetCommand($"CREATE SCHEMA IF NOT EXISTS {table.SchemaName}", conn);
-                // await cmd.ExecuteNonQueryAsync();
-                //
-                // cmd = connFactory.GetCommand(string.Format(EnsureTableQuery, table.SchemaName, table.TableName), conn);
-                //
-                // Logger.Info($"Creating Table: {string.Format(EnsureTableQuery, table.SchemaName, table.TableName)}");
-
-                // check if table exists
                 Logger.Info($"Checking for Table: {string.Format(EnsureTableQuery, table.SchemaName.ToAllCaps(), table.TableName)}");
                 var cmd = connFactory.GetCommand(string.Format(EnsureTableQuery, table.SchemaName.ToAllCaps(), table.TableName), conn);
                 var reader = await cmd.ExecuteReaderAsync();
@@ -64,11 +55,6 @@ WHERE t.TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
 
                 await conn.CloseAsync();
                 
-                // //Logger.Info($"Creating Table: {string.Format(EnsureTableQuery, /*table.SchemaName,*/ table.TableName)}");
-                // Logger.Info($"Creating Table: {string.Format(QueryCreateTable, $"{table.TableName}S", table.TableName)}");
-                // var cmd = connFactory.GetCommand(string.Format(QueryCreateTable, $"{table.TableName}S", table.TableName), conn);
-                // await cmd.ExecuteNonQueryAsync();
-
                 if (count == 0)
                 {
                     // create table statement

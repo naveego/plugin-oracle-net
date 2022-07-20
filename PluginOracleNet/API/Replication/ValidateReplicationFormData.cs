@@ -124,15 +124,16 @@ namespace PluginOracleNet.API.Replication
                 errors.Add($"Unable to create test table: {e.Message}");
             }
 
-            if (errors.Count > 0) return errors;
+            if (errors.Count > 0) return errors; // exit if couldn't create table
             
             // --- upsert check ---
             try
             {
-                await UpsertRecordAsync(connFactory, validationTable, new Dictionary<string, object>
+                var recordMap = new Dictionary<string, object>
                 {
-                    { "TestingJobId", "testValue" }
-                });
+                    [Constants.ReplicationValidationJobId] = "testValue"
+                };
+                await UpsertRecordAsync(connFactory, validationTable, recordMap);
             }
             catch (Exception e)
             {

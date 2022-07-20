@@ -113,26 +113,43 @@ namespace PluginOracleNet.API.Replication
             // --- Action: Attempt to create, upsert data into, and then drop the validation table
             if (existsCheckSuccess)
             {
+                // --- ensure check ---
                 try
                 {
                     await EnsureTableAsync(connFactory, validationTable);
-
-                    await UpsertRecordAsync(connFactory, validationTable, new Dictionary<string, object>
-                    {
-                        { "TestingJobId", "testValue" }
-                    });
-                    
-                    await RecordExistsAsync(connFactory, validationTable, "testValue");
-
-                    await GetRecordAsync(connFactory, validationTable, "testValue");
-
-                    await DeleteRecordAsync(connFactory, validationTable, "testValue");
-
-                    await DropTableAsync(connFactory, validationTable);
                 }
                 catch (Exception e)
                 {
                     errors.Add($"Unable to create test table: {e.Message}");
+                }
+
+                if (errors.Count == 0)
+                {
+                    // --- upsert check ---
+                    try
+                    {
+                        await UpsertRecordAsync(connFactory, validationTable, new Dictionary<string, object>
+                        {
+                            { "TestingJobId", "testValue" }
+                        });
+                    }
+                    catch (Exception e)
+                    {
+                        errors.Add($"Unable to upsert into test table: {e.Message}");
+                    }
+                    
+                    if (errors.Count == 0)
+                    {
+                        // --- drop check ---
+                        try
+                        {
+                            await DropTableAsync(connFactory, validationTable);
+                        }
+                        catch (Exception e)
+                        {
+                            errors.Add($"Unable to drop test table: {e.Message}");
+                        }
+                    }
                 }
             }
 

@@ -125,24 +125,28 @@ namespace PluginOracleNet.API.Replication
             }
 
             if (errors.Count > 0) return errors; // exit if couldn't create table
-            
-            // // --- upsert check ---
-            // try
-            // {
-            //     var recordMap = new Dictionary<string, object>
-            //     {
-            //         [Constants.ReplicationValidationJobId] = "testValue"
-            //     };
-            //     await UpsertRecordAsync(connFactory, validationTable, recordMap);
-            // }
-            // catch (Exception e)
-            // {
-            //     errors.Add($"Unable to upsert into test table: {e.Message}");
-            // }
+
+            // --- upsert check ---
+            try
+            {
+                await Task.Delay(50); // wait 0.05s to make sure create command finishes
+                
+                var recordMap = new Dictionary<string, object>
+                {
+                    [Constants.ReplicationValidationJobId] = "testValue"
+                };
+                await UpsertRecordAsync(connFactory, validationTable, recordMap);
+            }
+            catch (Exception e)
+            {
+                errors.Add($"Unable to upsert into test table: {e.Message}");
+            }
 
             // --- drop check ---
             try
             {
+                await Task.Delay(50); // wait 0.05s to make sure create and upsert commands finish
+                
                 await DropTableAsync(connFactory, validationTable);
             }
             catch (Exception e)

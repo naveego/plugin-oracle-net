@@ -109,48 +109,44 @@ namespace PluginOracleNet.API.Replication
                 await conn.CloseAsync();
             }
             
+            if (!existsCheckSuccess) return errors;
+            
             // Case 2) schema w/o privileges for all system databases
-            // --- Action: Attempt to create, upsert data into, and then drop the validation table
-            if (existsCheckSuccess)
-            {
-                // --- ensure check ---
-                try
-                {
-                    await EnsureTableAsync(connFactory, validationTable);
-                }
-                catch (Exception e)
-                {
-                    errors.Add($"Unable to create test table: {e.Message}");
-                }
+            // === Action: Attempt to create, upsert data into, and then drop the validation table ===
 
-                if (errors.Count == 0)
+            // --- ensure check ---
+            try
+            {
+                await EnsureTableAsync(connFactory, validationTable);
+            }
+            catch (Exception e)
+            {
+                errors.Add($"Unable to create test table: {e.Message}");
+            }
+
+            if (errors.Count > 0) return errors;
+            
+            // --- upsert check ---
+            try
+            {
+                await UpsertRecordAsync(connFactory, validationTable, new Dictionary<string, object>
                 {
-                    // --- upsert check ---
-                    try
-                    {
-                        await UpsertRecordAsync(connFactory, validationTable, new Dictionary<string, object>
-                        {
-                            { "TestingJobId", "testValue" }
-                        });
-                    }
-                    catch (Exception e)
-                    {
-                        errors.Add($"Unable to upsert into test table: {e.Message}");
-                    }
-                    
-                    if (errors.Count == 0)
-                    {
-                        // --- drop check ---
-                        try
-                        {
-                            await DropTableAsync(connFactory, validationTable);
-                        }
-                        catch (Exception e)
-                        {
-                            errors.Add($"Unable to drop test table: {e.Message}");
-                        }
-                    }
-                }
+                    { "TestingJobId", "testValue" }
+                });
+            }
+            catch (Exception e)
+            {
+                errors.Add($"Unable to upsert into test table: {e.Message}");
+            }
+
+            // --- drop check ---
+            try
+            {
+                await DropTableAsync(connFactory, validationTable);
+            }
+            catch (Exception e)
+            {
+                errors.Add($"Unable to drop test table: {e.Message}");
             }
 
             return errors;

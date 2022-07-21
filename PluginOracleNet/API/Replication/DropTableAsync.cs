@@ -38,12 +38,12 @@ where t.owner not in ('ANONYMOUS','CTXSYS','DBSNMP','EXFSYS',
                 // determine if table exists
                 var existsCmd = connFactory.GetCommand(
                     string.Format(TableExistsQuery,
-                        Utility.Utility.GetSafeName(table.SchemaName.ToAllCaps(), '"'),
-                        Utility.Utility.GetSafeName(table.TableName, '"')
+                        table.SchemaName.ToAllCaps(),
+                        table.TableName
                     ), conn);
                 var reader = await existsCmd.ExecuteReaderAsync();
                 await reader.ReadAsync();
-                var count = (int)(Math.Round((decimal)reader.GetValueById("C")));
+                var count = (int)Math.Round((decimal)reader.GetValueById("C"));
 
                 if (count >= 1)
                 {

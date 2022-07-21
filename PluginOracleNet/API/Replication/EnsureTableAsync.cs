@@ -77,6 +77,8 @@ WHERE t.TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
                 var reader = await cmd.ExecuteReaderAsync();
                 await reader.ReadAsync();
                 var count = (int)Math.Round((decimal)reader.GetValueById("C"));
+
+                await conn.CloseAsync();
                 
                 // create schema if not exists
                 if (count == 0)

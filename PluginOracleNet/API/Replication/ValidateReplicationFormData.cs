@@ -99,7 +99,7 @@ namespace PluginOracleNet.API.Replication
                 else
                 {
                     var stage = existsCheckSuccess ? "checking user permissions" : "detecting the schema";
-                    errors.Add($"An error occured when {stage}:\n{o.Message}");
+                    errors.Add($"An error occured when {stage}:\n{o.Message}.");
                 }
             }
             catch (Exception e)
@@ -123,7 +123,7 @@ namespace PluginOracleNet.API.Replication
             }
             catch (Exception e)
             {
-                errors.Add($"Unable to create test table: {e.Message}");
+                errors.Add($"Unable to create test table: {e.Message}.");
             }
 
             if (errors.Count > 0) return errors; // exit if couldn't create table
@@ -142,7 +142,7 @@ namespace PluginOracleNet.API.Replication
                 }
                 catch (Exception e)
                 {
-                    if (i >= 4) errors.Add($"Unable to verify test table: {e.Message}");
+                    if (i >= 4) errors.Add($"Unable to verify test table: {e.Message}.");
                 }
 
                 // delay if not last retry
@@ -162,24 +162,27 @@ namespace PluginOracleNet.API.Replication
                 }
                 catch (Exception e)
                 {
-                    errors.Add($"Unable to upsert into test table: {e.Message}");
+                    errors.Add($"Unable to upsert into test table: {e.Message}.");
                 }
 
-                // --- table has record check w/ retries=5 and delay=0.5s ---
-                for (int i = 0; i < 5; i++)
+                if (errors.Count == 0)
                 {
-                    try
+                    // --- table has record check w/ retries=5 and delay=0.5s ---
+                    for (int i = 0; i < 5; i++)
                     {
-                        if (await RecordExistsAsync(connFactory, validationTable,
-                            Constants.ReplicationValidationJobIdTestValue)) break;
-                    }
-                    catch (Exception e)
-                    {
-                        if (i >= 4) errors.Add($"Unable to verify test record: {e.Message}");
-                    }
+                        try
+                        {
+                            if (await RecordExistsAsync(connFactory, validationTable,
+                                    Constants.ReplicationValidationJobIdTestValue)) break;
+                        }
+                        catch (Exception e)
+                        {
+                            if (i >= 4) errors.Add($"Unable to verify test record: {e.Message}.");
+                        }
 
-                    // delay if not last retry
-                    if (i < 4) await Task.Delay(ValidationDelay);
+                        // delay if not last retry
+                        if (i < 4) await Task.Delay(ValidationDelay);
+                    }
                 }
             }
 
@@ -190,7 +193,7 @@ namespace PluginOracleNet.API.Replication
             }
             catch (Exception e)
             {
-                errors.Add($"Unable to drop test table: {e.Message}");
+                errors.Add($"Unable to drop test table: {e.Message}.");
             }
 
             return errors;

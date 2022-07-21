@@ -31,11 +31,11 @@ namespace PluginOracleNetTest.Plugin
         private static string TestPropertyID = "\"ID\"";
         private static string TestPropertyName = "ID";
 
-        private static string SettingsHostname = "";
-        private static string SettingsPassword = "";
-        private static string SettingsPort = "";
-        private static string SettingsServiceName = "";
-        private static string SettingsUsername = "";
+        internal static string SettingsHostname = "";
+        internal static string SettingsPassword = "";
+        internal static string SettingsPort = "";
+        internal static string SettingsServiceName = "";
+        internal static string SettingsUsername = "";
 
         private Settings GetSettings()
         {
@@ -334,7 +334,7 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(42, response.Schemas.Count);
+            Assert.Equal(39, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             var schema = response.Schemas[1]; // Use testing table

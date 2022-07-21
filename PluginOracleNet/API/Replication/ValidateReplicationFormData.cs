@@ -49,6 +49,8 @@ namespace PluginOracleNet.API.Replication
             
             return errors;
         }
+
+        private const int ValidationDelay = 1000;
         
         public static async Task<List<string>> TestReplicationFormData(ConfigureReplicationFormData data, IConnectionFactory connFactory)
         {
@@ -126,27 +128,64 @@ namespace PluginOracleNet.API.Replication
 
             if (errors.Count > 0) return errors; // exit if couldn't create table
 
-            // --- upsert check ---
-            try
+            // --- table exists check w/ retries=5 and delay=0.5s ---
+            var tableExistsSucceeded = false;
+            for (int i = 0; i < 5; i++)
             {
-                await Task.Delay(50); // wait 0.05s to make sure create command finishes
-                
-                var recordMap = new Dictionary<string, object>
+                try
                 {
-                    [Constants.ReplicationValidationJobId] = "testValue"
-                };
-                await UpsertRecordAsync(connFactory, validationTable, recordMap);
+                    if (await TableExistsAsync(connFactory, validationTable))
+                    {
+                        tableExistsSucceeded = true;
+                        break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (i >= 4) errors.Add($"Unable to verify test table: {e.Message}");
+                }
+
+                // delay if not last retry
+                if (i < 4) await Task.Delay(ValidationDelay);
             }
-            catch (Exception e)
+
+            if (tableExistsSucceeded)
             {
-                errors.Add($"Unable to upsert into test table: {e.Message}");
+                // --- upsert check ---
+                try
+                {
+                    var recordMap = new Dictionary<string, object>
+                    {
+                        [Constants.ReplicationValidationJobId] = Constants.ReplicationValidationJobIdTestValue
+                    };
+                    await UpsertRecordAsync(connFactory, validationTable, recordMap);
+                }
+                catch (Exception e)
+                {
+                    errors.Add($"Unable to upsert into test table: {e.Message}");
+                }
+
+                // --- table has record check w/ retries=5 and delay=0.5s ---
+                for (int i = 0; i < 5; i++)
+                {
+                    try
+                    {
+                        if (await RecordExistsAsync(connFactory, validationTable,
+                            Constants.ReplicationValidationJobIdTestValue)) break;
+                    }
+                    catch (Exception e)
+                    {
+                        if (i >= 4) errors.Add($"Unable to verify test record: {e.Message}");
+                    }
+
+                    // delay if not last retry
+                    if (i < 4) await Task.Delay(ValidationDelay);
+                }
             }
 
             // --- drop check ---
             try
             {
-                await Task.Delay(50); // wait 0.05s to make sure create and upsert commands finish
-                
                 await DropTableAsync(connFactory, validationTable);
             }
             catch (Exception e)

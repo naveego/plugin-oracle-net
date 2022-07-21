@@ -19,6 +19,8 @@ namespace PluginOracleNet.API.Utility
         public static string ReplicationValidationTableName = "NaveegoValidationTestTable";
         public static string ReplicationValidationJobId = "TestingJobId";
 
+        public static string ReplicationValidationJobIdTestValue = "testValue";
+
         public static List<ReplicationColumn> ReplicationMetaDataColumns = new List<ReplicationColumn>
         {
             new ReplicationColumn

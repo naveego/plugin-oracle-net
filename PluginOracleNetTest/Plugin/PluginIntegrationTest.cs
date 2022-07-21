@@ -31,15 +31,21 @@ namespace PluginOracleNetTest.Plugin
         private static string TestPropertyID = "\"ID\"";
         private static string TestPropertyName = "ID";
 
+        private static string SettingsHostname = "";
+        private static string SettingsPassword = "";
+        private static string SettingsPort = "";
+        private static string SettingsServiceName = "";
+        private static string SettingsUsername = "";
+
         private Settings GetSettings()
         {
             return new Settings
             {
-                Hostname = "",
-                Port = "",
-                Password = "",
-                Username = "",
-                ServiceName = ""
+                Hostname = SettingsHostname,
+                Port = SettingsPort,
+                Password = SettingsPassword,
+                Username = SettingsUsername,
+                ServiceName = SettingsServiceName
             };
         }
 
@@ -273,11 +279,11 @@ namespace PluginOracleNetTest.Plugin
                 SettingsJson = JsonConvert.SerializeObject(new Settings
                 {
                     // When testing, enter same info from GetSettings() w/ wrongUsername as Username
-                    Hostname = "",
-                    Port = "",
-                    Password = "",
+                    Hostname = SettingsHostname,
+                    Port = SettingsPort,
+                    Password = SettingsPassword,
                     Username = wrongUsername,
-                    ServiceName = ""
+                    ServiceName = SettingsServiceName
                 }),
                 OauthConfiguration = new OAuthConfiguration(),
                 OauthStateJson = ""
@@ -328,7 +334,7 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(36, response.Schemas.Count);
+            Assert.Equal(42, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             var schema = response.Schemas[1]; // Use testing table

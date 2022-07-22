@@ -995,34 +995,51 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
         
-        // [Fact]
-        // public async Task ConfigureReplicationTest()
-        // {
-        //     // setup
-        //     Server server = new Server
-        //     {
-        //         Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
-        //         Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
-        //     };
-        //     server.Start();
-        //
-        //     var port = server.Ports.First().BoundPort;
-        //
-        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-        //     var client = new Publisher.PublisherClient(channel);
-        //
-        //     var connectRequest = GetConnectSettings();
-        //
-        //     var configureReplicationRequest = new ConfigureReplicationRequest
-        //     {
-        //         Form = new ConfigurationFormRequest
-        //         {
-        //             
-        //         }
-        //     };
-        //
-        //     client.Connect(connectRequest);
-        //     client.ConfigureReplication(configureReplicationRequest);
-        // }
+        [Fact]
+        public async Task ConfigureReplicationTest()
+        {
+            // setup
+            Server server = new Server
+            {
+                Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+            };
+            server.Start();
+
+            var port = server.Ports.First().BoundPort;
+
+            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+            var client = new Publisher.PublisherClient(channel);
+
+            var connectRequest = GetConnectSettings();
+            
+            var request = new ConfigureReplicationRequest
+            {
+                Form = new ConfigurationFormRequest
+                {
+                    DataJson = JsonConvert.SerializeObject(
+                        new ConfigureReplicationFormData
+                        {
+                            SchemaName = "C##DEMO",
+                            GoldenTableName = "gr_test",
+                            VersionTableName = "vr_test"
+                        }
+                    )
+                },
+                Schema = GetTestReplicationSchema()
+            };
+
+            // act
+            client.Connect(connectRequest);
+            var response = client.ConfigureReplication(request);
+
+            // assert
+            Assert.IsType<ConfigureReplicationResponse>(response);
+            Assert.Empty(response.Form.Errors);
+
+            // cleanup
+            await channel.ShutdownAsync();
+            await server.ShutdownAsync();
+        }
     }
 }

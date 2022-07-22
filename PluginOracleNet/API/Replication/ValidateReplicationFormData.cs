@@ -16,7 +16,7 @@ namespace PluginOracleNet.API.Replication
     public static partial class Replication
     {
         private static readonly string SchemaExistsCmd =
-            "SELECT COUNT(DISTINCT username) as C FROM all_users WHERE username = '{0}' ORDER BY username";
+            "SELECT COUNT(DISTINCT username) as \"C\" FROM all_users WHERE username = '{0}' ORDER BY username";
 
         private static readonly Exception OracleReaderFailedException =
             new Exception("Command execution failed. No results from query.");
@@ -194,6 +194,25 @@ namespace PluginOracleNet.API.Replication
             catch (Exception e)
             {
                 errors.Add($"Unable to drop test table: {e.Message}.");
+            }
+            
+            if (errors.Count > 0) return errors; // exit if couldn't drop table
+            
+            // --- table doesn't exist check w/ retries=5 and delay=0.5s ---
+            for (var i = 0; i < 5; i++)
+            {
+                try
+                {
+                    if (!await TableExistsAsync(connFactory, validationTable))
+                        break;
+                }
+                catch (Exception e)
+                {
+                    if (i >= 4) errors.Add($"Unable to verify test table is dropped: {e.Message}.");
+                }
+
+                // delay if not last retry
+                if (i < 4) await Task.Delay(ValidationDelay);
             }
 
             return errors;

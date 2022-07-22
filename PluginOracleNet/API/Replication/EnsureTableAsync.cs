@@ -52,7 +52,7 @@ WHERE t.TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
                     string.Format(EnsureTableQuery, table.SchemaName.ToAllCaps(), table.TableName), conn);
                 var reader = await cmd.ExecuteReaderAsync();
                 await reader.ReadAsync();
-                var count = (int)Math.Round((decimal)reader.GetValueById("C"));
+                var count = (decimal)reader.GetValueById("C");
 
                 return count > 0;
             }
@@ -76,12 +76,12 @@ WHERE t.TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
                     string.Format(EnsureTableQuery, table.SchemaName.ToAllCaps(), table.TableName), conn);
                 var reader = await cmd.ExecuteReaderAsync();
                 await reader.ReadAsync();
-                var count = (int)Math.Round((decimal)reader.GetValueById("C"));
+                var count = (decimal)reader.GetValueById("C");
 
                 await conn.CloseAsync();
                 
                 // create schema if not exists
-                if (count == 0)
+                if (count <= 0)
                 {
                     // create table statement
                     var querySb = new StringBuilder($@"CREATE TABLE {Utility.Utility.GetSafeName(table.SchemaName.ToAllCaps())}");

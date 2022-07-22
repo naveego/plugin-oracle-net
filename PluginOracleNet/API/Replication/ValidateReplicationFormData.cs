@@ -130,7 +130,7 @@ namespace PluginOracleNet.API.Replication
 
             // --- table exists check w/ retries=5 and delay=0.5s ---
             var tableExistsSucceeded = false;
-            for (int i = 0; i < 5; i++)
+            for (var i = 0; i < 5; i++)
             {
                 try
                 {
@@ -168,7 +168,7 @@ namespace PluginOracleNet.API.Replication
                 if (errors.Count == 0)
                 {
                     // --- table has record check w/ retries=5 and delay=0.5s ---
-                    for (int i = 0; i < 5; i++)
+                    for (var i = 0; i < 5; i++)
                     {
                         try
                         {

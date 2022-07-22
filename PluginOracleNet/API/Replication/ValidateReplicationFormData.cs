@@ -119,7 +119,10 @@ namespace PluginOracleNet.API.Replication
             // --- ensure check ---
             try
             {
-                await EnsureTableAsync(connFactory, validationTable);
+                var tableExists = await TableExistsAsync(connFactory, validationTable);
+                
+                if (!tableExists)
+                    await EnsureTableAsync(connFactory, validationTable);
             }
             catch (Exception e)
             {

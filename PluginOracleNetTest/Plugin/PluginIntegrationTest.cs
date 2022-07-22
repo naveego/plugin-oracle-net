@@ -994,5 +994,35 @@ namespace PluginOracleNetTest.Plugin
             await channel.ShutdownAsync();
             await server.ShutdownAsync();
         }
+        
+        // [Fact]
+        // public async Task ConfigureReplicationTest()
+        // {
+        //     // setup
+        //     Server server = new Server
+        //     {
+        //         Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+        //         Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+        //     };
+        //     server.Start();
+        //
+        //     var port = server.Ports.First().BoundPort;
+        //
+        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+        //     var client = new Publisher.PublisherClient(channel);
+        //
+        //     var connectRequest = GetConnectSettings();
+        //
+        //     var configureReplicationRequest = new ConfigureReplicationRequest
+        //     {
+        //         Form = new ConfigurationFormRequest
+        //         {
+        //             
+        //         }
+        //     };
+        //
+        //     client.Connect(connectRequest);
+        //     client.ConfigureReplication(configureReplicationRequest);
+        // }
     }
 }

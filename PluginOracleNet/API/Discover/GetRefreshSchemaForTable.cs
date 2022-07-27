@@ -9,7 +9,7 @@ namespace PluginOracleNet.API.Discover
     public static partial class Discover
     {
         private const string GetTableAndColumnsQuery = @"
-SELECT 
+SELECT
     t.OWNER,
     t.TABLE_NAME,
     c.COLUMN_NAME,
@@ -18,11 +18,7 @@ SELECT
     c.DATA_PRECISION,
     c.DATA_SCALE,
     c.NULLABLE,
-    CASE
-        WHEN tc.CONSTRAINT_TYPE = 'P'
-            THEN 'P'
-        ELSE NULL
-    END AS CONSTRAINT_TYPE
+    tc.CONSTRAINT_TYPE
 FROM ALL_TABLES t
     INNER JOIN ALL_TAB_COLUMNS c ON c.OWNER = t.OWNER AND c.TABLE_NAME = t.TABLE_NAME
     LEFT OUTER JOIN all_cons_columns ccu ON ccu.COLUMN_NAME = c.COLUMN_NAME AND ccu.TABLE_NAME = t.TABLE_NAME AND ccu.OWNER = t.OWNER

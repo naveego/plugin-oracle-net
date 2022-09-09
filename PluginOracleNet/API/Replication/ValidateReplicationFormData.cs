@@ -64,9 +64,9 @@ namespace PluginOracleNet.API.Replication
                 Columns = Constants.ReplicationValidationColumns
             };
 
+            // Case 1) schema does not exist
             var conn = connFactory.GetConnection();
 
-            // Case 1) schema does not exist
             try
             {
                 await conn.OpenAsync();

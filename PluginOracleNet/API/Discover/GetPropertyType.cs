@@ -24,7 +24,7 @@ namespace PluginOracleNet.API.Discover
                 case bool _ when type == typeof(Decimal):
                     return PropertyType.Decimal;
                 case bool _ when type == typeof(string):
-                    if (Int64.Parse(row["ColumnSize"].ToString()) > 1024)
+                    if (Int64.Parse(row["ColumnSize"].ToString()) > 500)
                     {
                         return PropertyType.Text;
                     }

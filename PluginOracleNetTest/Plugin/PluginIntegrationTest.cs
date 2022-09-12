@@ -89,7 +89,7 @@ namespace PluginOracleNetTest.Plugin
 
         private Schema GetTestReplicationSchema(string id = "test", string name = "test", string query = "")
         {
-            // --- Note: Changed to fit the schema of the ACCOUNTARCHIVE_GHTesting table ---
+            // --- Note: Changed to fit the schema of the <table_name> table ---
             // Change query if empty
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -116,6 +116,7 @@ namespace PluginOracleNetTest.Plugin
                         Id = "FIRST_NAME",
                         Name = "FIRST_NAME",
                         Type = PropertyType.String,
+                        TypeAtSource = "VARCHAR2(300)", // For testing custom column size
                         IsKey = false
                     },
                     new Property
@@ -334,7 +335,7 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(42, response.Schemas.Count);
+            Assert.Equal(44, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             var schema = response.Schemas[1]; // Use testing table
@@ -745,7 +746,7 @@ namespace PluginOracleNetTest.Plugin
                 {
                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
                     {
-                        SchemaName = "C##Demo",
+                        SchemaName = "<schema_name>",
                         GoldenTableName = "gr_test",
                         VersionTableName = "vr_test"
                     })
@@ -795,7 +796,7 @@ namespace PluginOracleNetTest.Plugin
                 {
                     DataJson = JsonConvert.SerializeObject(new ConfigureWriteFormData
                     {
-                        StoredProcedure = "UpsertIntoAccountArchive_GHTesting"
+                        StoredProcedure = "UpsertInto<table_name>"
                     })
                 }
             };
@@ -805,7 +806,7 @@ namespace PluginOracleNetTest.Plugin
                 new Record
                 {
                     Action = Record.Types.Action.Upsert,
-                    CorrelationId = "ACCOUNTARCHIVE_GHTesting",
+                    CorrelationId = "<table_name>",
                     RecordId = "record1",
                     DataJson = @"{
     ""U_ID"":""aaaaaaaa-2222-4e8e-99b4-7f8bb172bf9a"",
@@ -867,7 +868,7 @@ namespace PluginOracleNetTest.Plugin
             // assert
             Assert.Single(recordAcks);
             Assert.Equal("", recordAcks[0].Error);
-            Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
+            Assert.Equal("<table_name>", recordAcks[0].CorrelationId);
 
             // cleanup
             await channel.ShutdownAsync();
@@ -900,7 +901,7 @@ namespace PluginOracleNetTest.Plugin
                 {
                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
                     {
-                        SchemaName = "C##Demo",
+                        SchemaName = "<schema_name>",
                         GoldenTableName = "gr_test",
                         VersionTableName = "vr_test"
                     })
@@ -1020,7 +1021,7 @@ namespace PluginOracleNetTest.Plugin
                     DataJson = JsonConvert.SerializeObject(
                         new ConfigureReplicationFormData
                         {
-                            SchemaName = "C##DEMO",
+                            SchemaName = "<schema_name>",
                             GoldenTableName = "gr_test",
                             VersionTableName = "vr_test"
                         }

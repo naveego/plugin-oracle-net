@@ -351,7 +351,7 @@ namespace PluginOracleNet.Plugin
         /// <param name="request"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        public override Task<ConfigureReplicationResponse> ConfigureReplication(ConfigureReplicationRequest request,
+        public override async Task<ConfigureReplicationResponse> ConfigureReplication(ConfigureReplicationRequest request,
             ServerCallContext context)
         {
             Logger.SetLogPrefix("configure_replication");
@@ -365,14 +365,19 @@ namespace PluginOracleNet.Plugin
                 var errors = new List<string>();
                 if (!string.IsNullOrWhiteSpace(request.Form.DataJson))
                 {
-                    // check for config errors
+                    // basic validation
                     var replicationFormData =
                         JsonConvert.DeserializeObject<ConfigureReplicationFormData>(request.Form.DataJson);
 
-                    errors = replicationFormData.ValidateReplicationFormData();
+                    errors = await replicationFormData.ValidateReplicationFormData();
+
+                    if (errors.Count <= 0)
+                    {
+                        errors = await Replication.TestReplicationFormData(replicationFormData, _connectionFactory);
+                    }
                 }
 
-                return Task.FromResult(new ConfigureReplicationResponse // TODO: Fix Config Repl Error
+                return new ConfigureReplicationResponse
                 {
                     Form = new ConfigurationFormResponse
                     {
@@ -382,23 +387,23 @@ namespace PluginOracleNet.Plugin
                         UiJson = uiJson,
                         StateJson = request.Form.StateJson
                     }
-                });
+                };
             }
             catch (Exception e)
             {
                 Logger.Error(e, e.Message, context);
 
-                return Task.FromResult(new ConfigureReplicationResponse
+                return new ConfigureReplicationResponse
                 {
                     Form = new ConfigurationFormResponse
                     {
                         DataJson = request.Form.DataJson,
-                        Errors = { e.Message },
+                        Errors = { e.Message, e.StackTrace },
                         SchemaJson = schemaJson,
                         UiJson = uiJson,
                         StateJson = request.Form.StateJson
                     }
-                });
+                };
             }
         }
 

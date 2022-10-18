@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using PluginOracleNet.Helper;
 using PluginOracleNet.DataContracts;
 using Newtonsoft.Json;
@@ -10,7 +8,8 @@ using Xunit;
 using System.Threading.Tasks;
 using Grpc.Core;
 using System.Linq;
-using PluginOracleNet.DataContracts;
+using PluginOracleNet.API.Factory;
+using PluginOracleNet.API.Replication;
 using Record = Naveego.Sdk.Plugins.Record;
 
 namespace PluginOracleNetTest.Plugin
@@ -19,33 +18,34 @@ namespace PluginOracleNetTest.Plugin
     {
         // Test Variables
 
-        private static string TestSchemaID = "\"C##DEMO\".\"ACCOUNTARCHIVE_GHTesting\"";
-        private static string TestSchemaName = "C##DEMO.ACCOUNTARCHIVE_GHTesting";
+        private static string TestSchemaID = "\"<schema_name>\".\"<table_name>\"";
+        private static string TestSchemaName = "<schema_name>.<table_name>";
         private static int TestSampleCount = 10;
         private static int TestPropertyCount = 11;
         
-        private static string TestSchemaID_2 = "\"C##DEMO\".\"SRMData_GHTesting\"";
-        private static string TestSchemaName_2 = "C##DEMO.SRMData_GHTesting";
-        private static int TestSampleCount_2 = 0;
-        private static int TestPropertyCount_2 = 10;
+        private static string TestSchemaID_2 = "\"<schema_name>\".\"<table_name>02\"";
+        private static string TestSchemaName_2 = "<schema_name>.<table_name>02";
+        private static int TestSampleCount_2 = 10;
+        private static int TestPropertyCount_2 = 11;
 
         private static string TestPropertyID = "\"ID\"";
         private static string TestPropertyName = "ID";
 
+        internal static string SettingsHostname = "";
+        internal static string SettingsPassword = "";
+        internal static string SettingsPort = "";
+        internal static string SettingsServiceName = "";
+        internal static string SettingsUsername = "";
+
         private Settings GetSettings()
         {
-            //var settingsFile = System.IO.File.ReadAllText("C:\\Temp\\OracleServerSettings.json");
-            //Settings settings = JsonConvert.DeserializeObject<Settings>(settingsFile);
-            //return settings;
-
             return new Settings
             {
-                Hostname = "",
-                Port = "",
-                Password = "",
-                Username = "",
-                ServiceName = ""
-                //WalletPath = ""
+                Hostname = SettingsHostname,
+                Port = SettingsPort,
+                Password = SettingsPassword,
+                Username = SettingsUsername,
+                ServiceName = SettingsServiceName
             };
         }
 
@@ -89,7 +89,7 @@ namespace PluginOracleNetTest.Plugin
 
         private Schema GetTestReplicationSchema(string id = "test", string name = "test", string query = "")
         {
-            // --- Note: Changed to fit the schema of the ACCOUNTARCHIVE_GHTesting table ---
+            // --- Note: Changed to fit the schema of the <table_name> table ---
             // Change query if empty
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -116,6 +116,7 @@ namespace PluginOracleNetTest.Plugin
                         Id = "FIRST_NAME",
                         Name = "FIRST_NAME",
                         Type = PropertyType.String,
+                        TypeAtSource = "VARCHAR2(300)", // For testing custom column size
                         IsKey = false
                     },
                     new Property
@@ -182,78 +183,6 @@ namespace PluginOracleNetTest.Plugin
                         Type = PropertyType.String,
                         IsKey = false
                     }
-                    /*new Property
-                    {
-                        Id = "LASTNAME",
-                        Name = "LASTNAME",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "FIRSTNAME",
-                        Name = "FIRSTNAME",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "ADDRESS",
-                        Name = "ADDRESS",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "CITY",
-                        Name = "CITY",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "PERSONID",
-                        Name = "PERSONID",
-                        Type = PropertyType.Integer,
-                        IsKey = true
-                    }*/
-                    /*new Property
-                    {
-                        Id = "Id",
-                        Name = "Id",
-                        Type = PropertyType.Integer,
-                        IsKey = true
-                    },
-                    new Property
-                    {
-                        Id = "Name",
-                        Name = "Name",
-                        Type = PropertyType.String
-                    },
-                    new Property
-                    {
-                        Id = "DateTime",
-                        Name = "DateTime",
-                        Type = PropertyType.Datetime
-                    },
-                    new Property
-                    {
-                        Id = "Date",
-                        Name = "Date",
-                        Type = PropertyType.Date
-                    },
-                    new Property
-                    {
-                        Id = "Time",
-                        Name = "Time",
-                        Type = PropertyType.Time
-                    },
-                    new Property
-                    {
-                        Id = "Decimal",
-                        Name = "Decimal",
-                        Type = PropertyType.Decimal
-                    },*/
                 }
             };
         }
@@ -344,17 +273,18 @@ namespace PluginOracleNetTest.Plugin
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
 
-            const string wrongUsername = "C##ITSALLWRONG";
+            const string wrongUsername = "ITSALLWRONG";
 
             var request = new ConnectRequest
             {
                 SettingsJson = JsonConvert.SerializeObject(new Settings
                 {
-                    Hostname = "150.136.171.142",
-                    Port = "1521",
-                    Password = "mXNkJwXG839a",
+                    // When testing, enter same info from GetSettings() w/ wrongUsername as Username
+                    Hostname = SettingsHostname,
+                    Port = SettingsPort,
+                    Password = SettingsPassword,
                     Username = wrongUsername,
-                    ServiceName = "ORCLCDB.localdomain"
+                    ServiceName = SettingsServiceName
                 }),
                 OauthConfiguration = new OAuthConfiguration(),
                 OauthStateJson = ""
@@ -405,15 +335,14 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(18, response.Schemas.Count);
+            Assert.Equal(44, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
-            //var schema = response.Schemas[0];
             var schema = response.Schemas[1]; // Use testing table
 
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal($"", schema.Query);
+            Assert.Equal("", schema.Query);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -431,7 +360,7 @@ namespace PluginOracleNetTest.Plugin
 
             Assert.Equal(TestSchemaID_2, schema2.Id);
             Assert.Equal(TestSchemaName_2, schema2.Name);
-            Assert.Equal($"", schema2.Query);
+            Assert.Equal("", schema2.Query);
             Assert.Equal(TestSampleCount_2, schema2.Sample.Count);
             Assert.Equal(TestPropertyCount_2, schema2.Properties.Count);
 
@@ -485,7 +414,7 @@ namespace PluginOracleNetTest.Plugin
             var schema = response.Schemas[0];
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal($"", schema.Query);
+            Assert.Equal("", schema.Query);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -599,7 +528,7 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
 
-                [Fact]
+        [Fact]
         public async Task ReadStreamTableSchemaTest()
         {
             // setup
@@ -649,15 +578,9 @@ namespace PluginOracleNetTest.Plugin
             }
 
             // assert
-            Assert.Equal(421, records.Count);
+            Assert.Equal(424, records.Count);
 
             var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
-            // Assert.Equal("3", record["\"CHANNEL_ID\""]);
-            // Assert.Equal("Direct Sales", record["\"CHANNEL_DESC\""]);
-            // Assert.Equal("Direct", record["\"CHANNEL_CLASS\""]);
-            // Assert.Equal("12", record["\"CHANNEL_CLASS_ID\""]);
-            // Assert.Equal("Channel total", record["\"CHANNEL_TOTAL\""]);
-            // Assert.Equal("1", record["\"CHANNEL_TOTAL_ID\""]);
             Assert.Equal("dc6fdfef-812c-4c98-93cd-a4f839416c99", record["\"ID\""]);
             Assert.Equal("Arlette", record["\"FIRST_NAME\""]);
             Assert.Equal("Stopher", record["\"LAST_NAME\""]);
@@ -672,7 +595,7 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
 
-                [Fact]
+        [Fact]
         public async Task ReadStreamQuerySchemaTest()
         {
             // setup
@@ -688,7 +611,6 @@ namespace PluginOracleNetTest.Plugin
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
 
-            //var schema = GetTestSchema("test", "test", $"SELECT * FROM \"C##DEMO\".\"ACCOUNTARCHIVE\"");
             var schema = GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}");
             
             var connectRequest = GetConnectSettings();
@@ -723,15 +645,9 @@ namespace PluginOracleNetTest.Plugin
             }
 
             // assert
-            Assert.Equal(421, records.Count);
+            Assert.Equal(424, records.Count);
 
             var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
-            // Assert.Equal("3", record["\"CHANNEL_ID\""]);
-            // Assert.Equal("Direct Sales", record["\"CHANNEL_DESC\""]);
-            // Assert.Equal("Direct", record["\"CHANNEL_CLASS\""]);
-            // Assert.Equal("12", record["\"CHANNEL_CLASS_ID\""]);
-            // Assert.Equal("Channel total", record["\"CHANNEL_TOTAL\""]);
-            // Assert.Equal("1", record["\"CHANNEL_TOTAL_ID\""]);
             Assert.Equal("dc6fdfef-812c-4c98-93cd-a4f839416c99", record["\"ID\""]);
             Assert.Equal("Arlette", record["\"FIRST_NAME\""]);
             Assert.Equal("Stopher", record["\"LAST_NAME\""]);
@@ -830,7 +746,7 @@ namespace PluginOracleNetTest.Plugin
                 {
                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
                     {
-                        SchemaName = "C##Demo",
+                        SchemaName = "<schema_name>",
                         GoldenTableName = "gr_test",
                         VersionTableName = "vr_test"
                     })
@@ -855,7 +771,7 @@ namespace PluginOracleNetTest.Plugin
             await channel.ShutdownAsync();
             await server.ShutdownAsync();
         }
-        
+
         [Fact]
         public async Task WriteTest()
         {
@@ -880,7 +796,7 @@ namespace PluginOracleNetTest.Plugin
                 {
                     DataJson = JsonConvert.SerializeObject(new ConfigureWriteFormData
                     {
-                        StoredProcedure = "UpsertIntoAccountArchive_GHTesting"
+                        StoredProcedure = "UpsertInto<table_name>"
                     })
                 }
             };
@@ -890,7 +806,7 @@ namespace PluginOracleNetTest.Plugin
                 new Record
                 {
                     Action = Record.Types.Action.Upsert,
-                    CorrelationId = "ACCOUNTARCHIVE_GHTesting",
+                    CorrelationId = "<table_name>",
                     RecordId = "record1",
                     DataJson = @"{
     ""U_ID"":""aaaaaaaa-2222-4e8e-99b4-7f8bb172bf9a"",
@@ -952,7 +868,7 @@ namespace PluginOracleNetTest.Plugin
             // assert
             Assert.Single(recordAcks);
             Assert.Equal("", recordAcks[0].Error);
-            Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
+            Assert.Equal("<table_name>", recordAcks[0].CorrelationId);
 
             // cleanup
             await channel.ShutdownAsync();
@@ -985,7 +901,7 @@ namespace PluginOracleNetTest.Plugin
                 {
                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
                     {
-                        SchemaName = "C##Demo",
+                        SchemaName = "<schema_name>",
                         GoldenTableName = "gr_test",
                         VersionTableName = "vr_test"
                     })
@@ -1001,33 +917,32 @@ namespace PluginOracleNetTest.Plugin
 
             var records = new List<Record>()
             {
+                new Record
                 {
-                    new Record
+                    Action = Record.Types.Action.Upsert,
+                    CorrelationId = "test",
+                    RecordId = "record1",
+                    //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}",
+                    DataJson = @"{
+    ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
+    ""FIRST_NAME"":""Test"",
+    ""LAST_NAME"":""Second"",
+    ""EMAIL"":""test.second@email.net"",
+    ""ADDRESS"":""5678 Test Road"",
+    ""CITY"":""Test"",
+    ""STATE"":""MI"",
+    ""ZIP"":""91952"",
+    ""GENERAL_LEDGER"":""11190"",
+    ""BALANCE"":""1.00"",
+    ""REP"":""Ron Jordans""
+}".Replace("\n", ""),
+                    Versions =
                     {
-                        Action = Record.Types.Action.Upsert,
-                        CorrelationId = "ACCOUNTARCHIVE_GHTesting",
-                        RecordId = "record1",
-                        //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}",
-                        DataJson = $@"{{
-    ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
-    ""FIRST_NAME"":""Test"",
-    ""LAST_NAME"":""Second"",
-    ""EMAIL"":""test.second@email.net"",
-    ""ADDRESS"":""5678 Test Road"",
-    ""CITY"":""Test"",
-    ""STATE"":""MI"",
-    ""ZIP"":""91952"",
-    ""GENERAL_LEDGER"":""11190"",
-    ""BALANCE"":""1.00"",
-    ""REP"":""Ron Jordans""
-}}".Replace("\n", ""),
-                        Versions =
+                        new RecordVersion
                         {
-                            new RecordVersion
-                            {
-                                RecordId = "version1",
-                                //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}"
-                                DataJson = $@"{{
+                            RecordId = "version1",
+                            //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}"
+                            DataJson = @"{
     ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
     ""FIRST_NAME"":""Test"",
     ""LAST_NAME"":""Second"",
@@ -1039,8 +954,7 @@ namespace PluginOracleNetTest.Plugin
     ""GENERAL_LEDGER"":""11190"",
     ""BALANCE"":""1.00"",
     ""REP"":""Ron Jordans""
-}}".Replace("\n", "")
-                            }
+}".Replace("\n", "")
                         }
                     }
                 }
@@ -1075,7 +989,54 @@ namespace PluginOracleNetTest.Plugin
             // assert
             Assert.Single(recordAcks);
             Assert.Equal("", recordAcks[0].Error);
-            Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
+            Assert.Equal("test", recordAcks[0].CorrelationId);
+
+            // cleanup
+            await channel.ShutdownAsync();
+            await server.ShutdownAsync();
+        }
+        
+        [Fact]
+        public async Task ConfigureReplicationTest()
+        {
+            // setup
+            Server server = new Server
+            {
+                Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+            };
+            server.Start();
+
+            var port = server.Ports.First().BoundPort;
+
+            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+            var client = new Publisher.PublisherClient(channel);
+
+            var connectRequest = GetConnectSettings();
+            
+            var request = new ConfigureReplicationRequest
+            {
+                Form = new ConfigurationFormRequest
+                {
+                    DataJson = JsonConvert.SerializeObject(
+                        new ConfigureReplicationFormData
+                        {
+                            SchemaName = "<schema_name>",
+                            GoldenTableName = "gr_test",
+                            VersionTableName = "vr_test"
+                        }
+                    )
+                },
+                Schema = GetTestReplicationSchema()
+            };
+
+            // act
+            client.Connect(connectRequest);
+            var response = client.ConfigureReplication(request);
+
+            // assert
+            Assert.IsType<ConfigureReplicationResponse>(response);
+            Assert.Empty(response.Form.Errors);
 
             // cleanup
             await channel.ShutdownAsync();

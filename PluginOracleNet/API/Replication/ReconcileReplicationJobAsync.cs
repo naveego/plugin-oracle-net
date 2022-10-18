@@ -21,6 +21,10 @@ namespace PluginOracleNet.API.Replication
         private const string VersionNameChange = "Version name changed";
         private const string JobDataVersionChange = "Job data version changed";
         private const string ShapeDataVersionChange = "Shape data version changed";
+        private const string GoldenTableMissing = "Golden record table missing";
+        private const string VersionTableMissing = "Version table missing";
+        private const string GoldenTableInconsistent = "Golden record table inconsistent with metadata";
+        private const string VersionTableInconsistent = "Version table inconsistent with metadata";
         
         public static async Task ReconcileReplicationJobAsync(IConnectionFactory connFactory, PrepareWriteRequest request)
         {
@@ -36,8 +40,8 @@ namespace PluginOracleNet.API.Replication
             var metaDataTable = new ReplicationTable
             {
                 SchemaName = safeSchemaName,
-                TableName = Utility.Constants.ReplicationMetaDataTableName,
-                Columns = Utility.Constants.ReplicationMetaDataColumns
+                TableName = Constants.ReplicationMetaDataTableName,
+                Columns = Constants.ReplicationMetaDataColumns
             };
 
             var goldenTable = GetGoldenReplicationTable(request.Schema, safeSchemaName, safeGoldenTableName);
@@ -74,6 +78,8 @@ namespace PluginOracleNet.API.Replication
             {
                 var dropGoldenReason = "";
                 var dropVersionReason = "";
+                var createGolden = false;
+                var createVersion = false;
                 var previousReplicationSettings =
                     JsonConvert.DeserializeObject<ConfigureReplicationFormData>(previousMetaData.Request.Replication
                         .SettingsJson);
@@ -115,22 +121,100 @@ namespace PluginOracleNet.API.Replication
                     dropGoldenReason = ShapeDataVersionChange;
                     dropVersionReason = ShapeDataVersionChange;
                 }
+                
+                // check if golden record table exists
+                if (!await TableExistsAsync(connFactory, goldenTable))
+                {
+                    createGolden = true;
+                    dropGoldenReason = GoldenTableMissing;
+                }
+                // check if golden record schema is same as in the database
+                else
+                {
+                    // discover the table schema from the database
+                    var grSchema = await Discover.Discover.FindSchemaForTable(connFactory, new Schema
+                    {
+                        Id = $"{goldenTable.SchemaName}.{goldenTable.TableName}",
+                        Name = $"{goldenTable.SchemaName.Trim('"')}.{goldenTable.TableName.Trim('"')}",
+                        Description = "",
+                        Query = ""
+                    });
+
+                    // compare columns count of each GR table and schema
+                    if (grSchema.Properties.Count != goldenTable.Columns.Count)
+                        dropGoldenReason = GoldenTableInconsistent;
+                    else
+                    {
+                        // compare each column...
+                        for (int i = 0; i < grSchema.Properties.Count && dropGoldenReason == ""; i++)
+                        {
+                            var grProp = grSchema.Properties[i];
+                            var grCol = goldenTable.Columns[i];
+
+                            // ...by name and PK
+                            if (grProp.Name != grCol.ColumnName
+                                || grCol.PrimaryKey != grProp.IsKey)
+                            {
+                                dropGoldenReason = GoldenTableInconsistent;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // check if version record table exists
+                if (!await TableExistsAsync(connFactory, versionTable))
+                {
+                    createVersion = true;
+                    dropVersionReason = VersionTableMissing;
+                }
+                // check if version schema is same as in the database
+                else
+                {
+                    // discover the table schema from the database
+                    var vrSchema = await Discover.Discover.FindSchemaForTable(connFactory, new Schema
+                    {
+                        Id = $"{versionTable.SchemaName}.{versionTable.TableName}",
+                        Name = $"{versionTable.SchemaName.Trim('"')}.{versionTable.TableName.Trim('"')}",
+                        Description = "",
+                        Query = ""
+                    });
+
+                    // compare columns count of each GR table and schema
+                    if (vrSchema.Properties.Count != versionTable.Columns.Count)
+                        dropVersionReason = VersionTableInconsistent;
+                    else
+                    {
+                        // compare each column...
+                        for (int i = 0; i < vrSchema.Properties.Count && dropVersionReason == ""; i++)
+                        {
+                            var vrProp = vrSchema.Properties[i];
+                            var vrCol = versionTable.Columns[i];
+
+                            // ...by name and PK
+                            if (vrProp.Name != vrCol.ColumnName
+                                || vrCol.PrimaryKey != vrProp.IsKey)
+                            {
+                                dropVersionReason = VersionTableInconsistent;
+                                break;
+                            }
+                        }
+                    }
+                }
 
                 // drop previous golden table
                 if (dropGoldenReason != "")
                 {
-                    Logger.Info($"Dropping golden table: {dropGoldenReason}");
+                    Logger.Info($"{(createGolden ? "Creating" : "Dropping")} golden table: {dropGoldenReason}");
                     await DropTableAsync(connFactory, previousGoldenTable);
-
                     await EnsureTableAsync(connFactory, goldenTable);
                 }
 
                 // drop previous version table
                 if (dropVersionReason != "")
                 {
-                    Logger.Info($"Dropping version table: {dropVersionReason}");
+                    Logger.Info($"{(createVersion ? "Creating" : "Dropping")} version table: {dropVersionReason}");
                     await DropTableAsync(connFactory, previousVersionTable);
-
                     await EnsureTableAsync(connFactory, versionTable);
                 }
             }

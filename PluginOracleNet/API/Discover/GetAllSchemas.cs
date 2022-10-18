@@ -131,14 +131,12 @@ WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA') ORDER BY 
 
             return schema;
         }
-
-        public static PropertyType GetType(string dataType)
-        {
-            return GetType(dataType, null, DBNull.Value, DBNull.Value);
-        }
         
-        public static PropertyType GetType(string dataType, object dataLength, object dataPrecision, object dataScale)
+        public static PropertyType GetType(string dataType, object dataLength = null, object dataPrecision = null, object dataScale = null)
         {
+            dataScale ??= DBNull.Value;
+            dataPrecision ??= DBNull.Value;
+            
             switch (dataType)
             {
                 case "DATE":
@@ -184,7 +182,7 @@ WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA') ORDER BY 
                 case "NVARCHAR2":
                     if (dataLength != null)
                     {
-                        if ((decimal)dataLength >= 1024)
+                        if ((decimal)dataLength > 500)
                         {
                             return PropertyType.Text;
                         }

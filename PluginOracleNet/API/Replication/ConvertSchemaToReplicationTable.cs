@@ -53,7 +53,7 @@ namespace PluginOracleNet.API.Replication
                 case PropertyType.Blob:
                     return "CLOB";
                 case PropertyType.String:
-                    return "VARCHAR2(255)";
+                    return "VARCHAR2(500)";
                 case PropertyType.Text:
                     return "CLOB";
                 default:

@@ -52,6 +52,5 @@ namespace PluginOracleNet.Helper
         {
             return $"Data Source = (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={Hostname})(PORT={Port}))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME={ServiceName}))); User Id = {Username}; Password = {Password};";
         }
-        
     }
 }

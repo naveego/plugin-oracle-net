@@ -10,6 +10,7 @@ namespace PluginOracleNet.API.Replication
             Dictionary<string, object> schemaJsonObj = new Dictionary<string, object>
             {
                 { "type", "object"},
+                { "description", "This plugin can only write to schemas that can be accessed with the credentials used for this connection. New schemas cannot be created with the plugin. They must be created by a database administrator ahead of time." },
                 { "properties", new Dictionary<string, object>
                 {
                     {"SchemaName", new Dictionary<string, string>

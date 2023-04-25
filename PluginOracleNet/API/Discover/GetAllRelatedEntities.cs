@@ -33,7 +33,7 @@ FROM all_cons_columns a
 WHERE c.CONSTRAINT_TYPE = 'R'
     AND c.OWNER = '{0}'
     AND a.TABLE_NAME = '{1}'
-ORDER BY c.CONSTRAINT_NAME, c.TABLE_NAME, c_pk.TABLE_NAME, a.POSITION";
+ORDER BY c.TABLE_NAME, c_pk.TABLE_NAME, c.CONSTRAINT_NAME, a.POSITION";
 
         public static async IAsyncEnumerable<RelatedEntity> GetAllRelatedEntities(
             IConnectionFactory connFactory,
@@ -58,16 +58,17 @@ ORDER BY c.CONSTRAINT_NAME, c.TABLE_NAME, c_pk.TABLE_NAME, a.POSITION";
 
                     var sourceResourceId = "";
                     var sourceColumnsList = new List<string>();
-                    var foreignResourceId = "";
                     var foreignColumnsList = new List<string>();
-                    var relationshipName = "";
+                    var lastRelationshipName = "";
+                    var lastForeignResourceId = "";
 
                     var emitEntity = false;
                     var carryColumns = false;
                     var canRead = true;
-                    while (canRead || relationshipName != "")
+                    while (canRead || lastRelationshipName != "")
                     {
-                        string currentRelationshipName;
+                        var relationshipName = "";
+                        var foreignResourceId = "";
                         
                         // delay evaluation so that the loop cycles at least once before finishing
                         canRead = await reader.ReadAsync();
@@ -78,19 +79,19 @@ ORDER BY c.CONSTRAINT_NAME, c.TABLE_NAME, c_pk.TABLE_NAME, a.POSITION";
                             sourceColumnsList.Add(Utility.Utility.GetSafeName(reader.GetValueById(ColSourceColumn).ToString()?.Trim(' ')));
                             foreignResourceId = $"{Utility.Utility.GetSafeName(reader.GetValueById(ColForeignTableSchema).ToString()?.Trim(' '))}.{Utility.Utility.GetSafeName(reader.GetValueById(ColForeignTableName).ToString()?.Trim(' '))}";
                             foreignColumnsList.Add(Utility.Utility.GetSafeName(reader.GetValueById(ColForeignColumn).ToString()?.Trim(' ')));
-                            currentRelationshipName = $"{Utility.Utility.GetSafeName(reader.GetValueById(ColRelationshipName).ToString()?.Trim(' '))}";
+                            relationshipName = $"{Utility.Utility.GetSafeName(reader.GetValueById(ColRelationshipName).ToString()?.Trim(' '))}";
 
-                            if (relationshipName != "" && relationshipName != currentRelationshipName)
+                            if (lastRelationshipName != "" && lastRelationshipName != relationshipName)
                             {
                                 carryColumns = true;
-                                emitEntity = true;   
+                                emitEntity = true;
                             }
                         }
                         else
                         {
                             carryColumns = false;
-                            emitEntity = true;
-                            currentRelationshipName = "";
+                            emitEntity = !string.IsNullOrWhiteSpace(lastRelationshipName);
+                            relationshipName = "";
                         }
                         
                         // found a new foreign key constraint, emit a new related entity
@@ -132,7 +133,7 @@ ORDER BY c.CONSTRAINT_NAME, c.TABLE_NAME, c_pk.TABLE_NAME, a.POSITION";
                                 SchemaId = schema.Id,
                                 SourceResource = sourceResourceId,
                                 SourceColumn = sourceColumnBuilder.ToString(),
-                                ForeignResource = foreignResourceId,
+                                ForeignResource = lastForeignResourceId,
                                 ForeignColumn = foreignColumnBuilder.ToString(),
                                 RelationshipName = Math.Max(sourceColumnsList.Count, foreignColumnsList.Count) > 1
                                     ? "MULTIPART FOREIGN KEY" : "FOREIGN KEY"
@@ -151,7 +152,8 @@ ORDER BY c.CONSTRAINT_NAME, c.TABLE_NAME, c_pk.TABLE_NAME, a.POSITION";
                             }
                         }
 
-                        relationshipName = currentRelationshipName;
+                        lastRelationshipName = relationshipName;
+                        lastForeignResourceId = foreignResourceId;
                     }
                 }
             }

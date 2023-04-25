@@ -335,8 +335,8 @@ namespace PluginOracleNetTest.Plugin
             var response = client.DiscoverSchemas(request);
 
             // assert
-            Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(55, response.Schemas.Count);
+            Assert.IsType<DiscoverSchemasResponse>(response); 
+            Assert.Equal(56, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             var schema = response.Schemas[1]; // Use testing table
@@ -568,11 +568,11 @@ namespace PluginOracleNetTest.Plugin
 
             var response = client.DiscoverRelatedEntities(request);
 
-            // assert
-            Assert.IsType<DiscoverRelatedEntitiesResponse>(response);
-
             try
             {
+                // assert
+                Assert.IsType<DiscoverRelatedEntitiesResponse>(response);
+
                 var entity = response.RelatedEntities.First(e =>
                     e.SourceResource == TestRelatedSchemaID_1
                     && e.ForeignResource == TestRelatedSchemaID_2);
@@ -593,9 +593,74 @@ namespace PluginOracleNetTest.Plugin
                 Assert.Equal("\"ACCOUNT_ID\", \"USER_ID\"", entity2.ForeignColumn);
                 Assert.Equal("MULTIPART FOREIGN KEY", entity2.RelationshipName);
             }
-            catch (InvalidOperationException e)
+            finally
             {
-                throw new InvalidOperationException(e.Message, e.InnerException);
+                // cleanup
+                await channel.ShutdownAsync();
+                await server.ShutdownAsync();   
+            }
+        }
+
+        [Fact]
+        public async Task DiscoverAllRelatedEntitiesTest()
+        {
+            // setup
+            Server server = new Server
+            {
+                Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+            };
+            server.Start();
+
+            var port = server.Ports.First().BoundPort;
+
+            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+            var client = new Publisher.PublisherClient(channel);
+
+            var connectRequest = GetConnectSettings();
+
+            var discoverRequest = new DiscoverSchemasRequest
+            {
+                Mode = DiscoverSchemasRequest.Types.Mode.All,
+                SampleSize = 10
+            };
+
+            // act
+            client.Connect(connectRequest);
+            var discoverResponse = client.DiscoverSchemas(discoverRequest);
+
+            var request = new DiscoverRelatedEntitiesRequest
+            {
+                ToRelate = { discoverResponse.Schemas }
+            };
+
+            var response = client.DiscoverRelatedEntities(request);
+
+            try
+            {
+                // assert
+                Assert.IsType<DiscoverRelatedEntitiesResponse>(response);
+                Assert.Equal(response.RelatedEntities.Count, 3);
+
+                var entity = response.RelatedEntities.First(e =>
+                    e.SourceResource == TestRelatedSchemaID_1
+                    && e.ForeignResource == TestRelatedSchemaID_2);
+                Assert.Equal(TestRelatedSchemaID_1, entity.SchemaId);
+                Assert.Equal(TestRelatedSchemaID_1, entity.SourceResource);
+                Assert.Equal("\"USER_ID\"", entity.SourceColumn);
+                Assert.Equal(TestRelatedSchemaID_2, entity.ForeignResource);
+                Assert.Equal("\"USER_ID\"", entity.ForeignColumn);
+                Assert.Equal("FOREIGN KEY", entity.RelationshipName);
+
+                var entity2 = response.RelatedEntities.First(e =>
+                    e.SourceResource == TestRelatedSchemaID_2
+                    && e.ForeignResource == TestRelatedSchemaID_1);
+                Assert.Equal(TestRelatedSchemaID_2, entity2.SchemaId);
+                Assert.Equal(TestRelatedSchemaID_2, entity2.SourceResource);
+                Assert.Equal("\"ACCOUNT_ID\", \"USER_ID\"", entity2.SourceColumn);
+                Assert.Equal(TestRelatedSchemaID_1, entity2.ForeignResource);
+                Assert.Equal("\"ACCOUNT_ID\", \"USER_ID\"", entity2.ForeignColumn);
+                Assert.Equal("MULTIPART FOREIGN KEY", entity2.RelationshipName);
             }
             finally
             {

@@ -6,7 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Naveego.Sdk" Version="1.2.2" />
+		<PackageReference Include="Aunalytics.Sdk" Version="1.3.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 		<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.61" />
 		<PackageReference Include="Serilog" Version="2.10.0" />

@@ -2,8 +2,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualBasic;
-using Naveego.Sdk.Logging;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Logging;
+using Aunalytics.Sdk.Plugins;
 using Newtonsoft.Json;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.DataContracts;
@@ -78,8 +78,6 @@ namespace PluginOracleNet.API.Replication
             {
                 var dropGoldenReason = "";
                 var dropVersionReason = "";
-                var createGolden = false;
-                var createVersion = false;
                 var previousReplicationSettings =
                     JsonConvert.DeserializeObject<ConfigureReplicationFormData>(previousMetaData.Request.Replication
                         .SettingsJson);
@@ -125,87 +123,19 @@ namespace PluginOracleNet.API.Replication
                 // check if golden record table exists
                 if (!await TableExistsAsync(connFactory, goldenTable))
                 {
-                    createGolden = true;
                     dropGoldenReason = GoldenTableMissing;
-                }
-                // check if golden record schema is same as in the database
-                else
-                {
-                    // discover the table schema from the database
-                    var grSchema = await Discover.Discover.FindSchemaForTable(connFactory, new Schema
-                    {
-                        Id = $"{goldenTable.SchemaName}.{goldenTable.TableName}",
-                        Name = $"{goldenTable.SchemaName.Trim('"')}.{goldenTable.TableName.Trim('"')}",
-                        Description = "",
-                        Query = ""
-                    });
-
-                    // compare columns count of each GR table and schema
-                    if (grSchema.Properties.Count != goldenTable.Columns.Count)
-                        dropGoldenReason = GoldenTableInconsistent;
-                    else
-                    {
-                        // compare each column...
-                        for (int i = 0; i < grSchema.Properties.Count && dropGoldenReason == ""; i++)
-                        {
-                            var grProp = grSchema.Properties[i];
-                            var grCol = goldenTable.Columns[i];
-
-                            // ...by name and PK
-                            if (grProp.Name != grCol.ColumnName
-                                || grCol.PrimaryKey != grProp.IsKey)
-                            {
-                                dropGoldenReason = GoldenTableInconsistent;
-                                break;
-                            }
-                        }
-                    }
                 }
 
                 // check if version record table exists
                 if (!await TableExistsAsync(connFactory, versionTable))
                 {
-                    createVersion = true;
                     dropVersionReason = VersionTableMissing;
-                }
-                // check if version schema is same as in the database
-                else
-                {
-                    // discover the table schema from the database
-                    var vrSchema = await Discover.Discover.FindSchemaForTable(connFactory, new Schema
-                    {
-                        Id = $"{versionTable.SchemaName}.{versionTable.TableName}",
-                        Name = $"{versionTable.SchemaName.Trim('"')}.{versionTable.TableName.Trim('"')}",
-                        Description = "",
-                        Query = ""
-                    });
-
-                    // compare columns count of each GR table and schema
-                    if (vrSchema.Properties.Count != versionTable.Columns.Count)
-                        dropVersionReason = VersionTableInconsistent;
-                    else
-                    {
-                        // compare each column...
-                        for (int i = 0; i < vrSchema.Properties.Count && dropVersionReason == ""; i++)
-                        {
-                            var vrProp = vrSchema.Properties[i];
-                            var vrCol = versionTable.Columns[i];
-
-                            // ...by name and PK
-                            if (vrProp.Name != vrCol.ColumnName
-                                || vrCol.PrimaryKey != vrProp.IsKey)
-                            {
-                                dropVersionReason = VersionTableInconsistent;
-                                break;
-                            }
-                        }
-                    }
                 }
 
                 // drop previous golden table
                 if (dropGoldenReason != "")
                 {
-                    Logger.Info($"{(createGolden ? "Creating" : "Dropping")} golden table: {dropGoldenReason}");
+                    Logger.Info($"Re-creating golden table: {dropGoldenReason}");
                     await DropTableAsync(connFactory, previousGoldenTable);
                     await EnsureTableAsync(connFactory, goldenTable);
                 }
@@ -213,7 +143,7 @@ namespace PluginOracleNet.API.Replication
                 // drop previous version table
                 if (dropVersionReason != "")
                 {
-                    Logger.Info($"{(createVersion ? "Creating" : "Dropping")} version table: {dropVersionReason}");
+                    Logger.Info($"Re-creating version table: {dropVersionReason}");
                     await DropTableAsync(connFactory, previousVersionTable);
                     await EnsureTableAsync(connFactory, versionTable);
                 }

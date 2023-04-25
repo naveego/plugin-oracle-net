@@ -1,6 +1,6 @@
 using System.Drawing;
 using System.Threading.Tasks;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Plugins;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.DataContracts;
 

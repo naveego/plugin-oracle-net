@@ -1,4 +1,4 @@
-﻿using Naveego.Sdk.Plugins;
+﻿using Aunalytics.Sdk.Plugins;
 using PluginOracleNet.DataContracts;
 using PluginOracleNet.API.Utility;
 

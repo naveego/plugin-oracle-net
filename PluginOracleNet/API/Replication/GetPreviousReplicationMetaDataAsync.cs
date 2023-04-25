@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using Naveego.Sdk.Logging;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Logging;
+using Aunalytics.Sdk.Plugins;
 using Newtonsoft.Json;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.API.Utility;
@@ -31,8 +31,6 @@ namespace PluginOracleNet.API.Replication
 
                 // ensure replication metadata table
                 await EnsureTableAsync(connFactory, table);
-
-                // check if metadata exists
 
                 await conn.OpenAsync();
 

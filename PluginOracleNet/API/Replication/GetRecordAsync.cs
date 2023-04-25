@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Naveego.Sdk.Logging;
+using Aunalytics.Sdk.Logging;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.DataContracts;
 using PluginOracleNet.Helper;

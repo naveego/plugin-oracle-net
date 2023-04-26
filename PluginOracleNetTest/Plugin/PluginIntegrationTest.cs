@@ -336,7 +336,7 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response); 
-            Assert.Equal(56, response.Schemas.Count);
+            Assert.Equal(58, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             var schema = response.Schemas[1]; // Use testing table

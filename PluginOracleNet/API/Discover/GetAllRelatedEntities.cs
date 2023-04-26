@@ -77,11 +77,11 @@ ORDER BY c.TABLE_NAME, c_pk.TABLE_NAME, c.CONSTRAINT_NAME, a.POSITION";
                         if (canRead)
                         {
                             // read values from current row
-                            sourceResourceId = $"{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColSourceTableSchema), ' ')}.{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColSourceTableName), ' ')}";
-                            sourceColumnsList.Add(Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColSourceColumn), ' '));
-                            foreignResourceId = $"{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColForeignTableSchema))}.{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColForeignTableName), ' ')}";
-                            foreignColumnsList.Add(Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColForeignColumn), ' '));
-                            relationshipName = $"{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColRelationshipName), ' ')}";
+                            sourceResourceId = $"{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColSourceTableSchema), '\"')}.{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColSourceTableName), '\"')}";
+                            sourceColumnsList.Add(Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColSourceColumn), '\"'));
+                            foreignResourceId = $"{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColForeignTableSchema))}.{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColForeignTableName), '\"')}";
+                            foreignColumnsList.Add(Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColForeignColumn), '\"'));
+                            relationshipName = $"{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColRelationshipName), '\"')}";
 
                             if (lastRelationshipName != "" && lastRelationshipName != relationshipName)
                             {

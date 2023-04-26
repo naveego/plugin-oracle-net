@@ -5,6 +5,7 @@ using System.Text;
 using Aunalytics.Sdk.Plugins;
 using Google.Protobuf.Collections;
 using PluginOracleNet.API.Factory;
+using PluginOracleNet.API.Utility;
 
 namespace PluginOracleNet.API.Discover
 {
@@ -18,13 +19,14 @@ namespace PluginOracleNet.API.Discover
         private const string ColForeignColumn = "FOREIGN_COLUMN";
         private const string ColRelationshipName = "SOURCE_CONSTRAINT";
 
-        private const string GetForeignKeysQuery = @"SELECT a.OWNER          SOURCE_TABLE_SCHEMA,
-      a.TABLE_NAME      SOURCE_TABLE_NAME,
-      a.COLUMN_NAME     SOURCE_COLUMN,
-      c_pk.OWNER        FOREIGN_TABLE_SCHEMA,
-      c_pk.TABLE_NAME   FOREIGN_TABLE_NAME,
-      a.COLUMN_NAME     FOREIGN_COLUMN,
-      c.CONSTRAINT_NAME SOURCE_CONSTRAINT
+        private const string GetForeignKeysQuery = @"
+SELECT a.OWNER           SOURCE_TABLE_SCHEMA,
+       a.TABLE_NAME      SOURCE_TABLE_NAME,
+       a.COLUMN_NAME     SOURCE_COLUMN,
+       c_pk.OWNER        FOREIGN_TABLE_SCHEMA,
+       c_pk.TABLE_NAME   FOREIGN_TABLE_NAME,
+       a.COLUMN_NAME     FOREIGN_COLUMN,
+       c.CONSTRAINT_NAME SOURCE_CONSTRAINT
 FROM all_cons_columns a
     INNER JOIN all_constraints c ON a.OWNER = c.OWNER
         AND a.CONSTRAINT_NAME = c.CONSTRAINT_NAME
@@ -75,11 +77,11 @@ ORDER BY c.TABLE_NAME, c_pk.TABLE_NAME, c.CONSTRAINT_NAME, a.POSITION";
                         if (canRead)
                         {
                             // read values from current row
-                            sourceResourceId = $"{Utility.Utility.GetSafeName(reader.GetValueById(ColSourceTableSchema).ToString()?.Trim(' '))}.{Utility.Utility.GetSafeName(reader.GetValueById(ColSourceTableName).ToString()?.Trim(' '))}";
-                            sourceColumnsList.Add(Utility.Utility.GetSafeName(reader.GetValueById(ColSourceColumn).ToString()?.Trim(' ')));
-                            foreignResourceId = $"{Utility.Utility.GetSafeName(reader.GetValueById(ColForeignTableSchema).ToString()?.Trim(' '))}.{Utility.Utility.GetSafeName(reader.GetValueById(ColForeignTableName).ToString()?.Trim(' '))}";
-                            foreignColumnsList.Add(Utility.Utility.GetSafeName(reader.GetValueById(ColForeignColumn).ToString()?.Trim(' ')));
-                            relationshipName = $"{Utility.Utility.GetSafeName(reader.GetValueById(ColRelationshipName).ToString()?.Trim(' '))}";
+                            sourceResourceId = $"{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColSourceTableSchema), ' ')}.{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColSourceTableName), ' ')}";
+                            sourceColumnsList.Add(Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColSourceColumn), ' '));
+                            foreignResourceId = $"{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColForeignTableSchema))}.{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColForeignTableName), ' ')}";
+                            foreignColumnsList.Add(Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColForeignColumn), ' '));
+                            relationshipName = $"{Utility.Utility.GetSafeName(reader.GetTrimmedStringById(ColRelationshipName), ' ')}";
 
                             if (lastRelationshipName != "" && lastRelationshipName != relationshipName)
                             {

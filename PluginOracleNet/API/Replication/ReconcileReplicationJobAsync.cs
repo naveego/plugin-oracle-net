@@ -2,8 +2,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualBasic;
-using Naveego.Sdk.Logging;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Logging;
+using Aunalytics.Sdk.Plugins;
 using Newtonsoft.Json;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.DataContracts;
@@ -128,7 +128,6 @@ namespace PluginOracleNet.API.Replication
                     createGolden = true;
                     dropGoldenReason = GoldenTableMissing;
                 }
-                // check if golden record schema is same as in the database
                 else
                 {
                     // discover the table schema from the database
@@ -168,7 +167,6 @@ namespace PluginOracleNet.API.Replication
                     createVersion = true;
                     dropVersionReason = VersionTableMissing;
                 }
-                // check if version schema is same as in the database
                 else
                 {
                     // discover the table schema from the database
@@ -206,7 +204,7 @@ namespace PluginOracleNet.API.Replication
                 if (dropGoldenReason != "")
                 {
                     Logger.Info($"{(createGolden ? "Creating" : "Dropping")} golden table: {dropGoldenReason}");
-                    await DropTableAsync(connFactory, previousGoldenTable);
+                    if (!createGolden) await DropTableAsync(connFactory, previousGoldenTable);
                     await EnsureTableAsync(connFactory, goldenTable);
                 }
 
@@ -214,7 +212,7 @@ namespace PluginOracleNet.API.Replication
                 if (dropVersionReason != "")
                 {
                     Logger.Info($"{(createVersion ? "Creating" : "Dropping")} version table: {dropVersionReason}");
-                    await DropTableAsync(connFactory, previousVersionTable);
+                    if (!createVersion) await DropTableAsync(connFactory, previousVersionTable);
                     await EnsureTableAsync(connFactory, versionTable);
                 }
             }

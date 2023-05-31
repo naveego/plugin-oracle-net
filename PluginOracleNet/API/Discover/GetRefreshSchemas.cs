@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Google.Protobuf.Collections;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Plugins;
 using PluginOracleNet.API.Factory;
 
 namespace PluginOracleNet.API.Discover

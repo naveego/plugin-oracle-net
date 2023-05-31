@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Naveego.Sdk.Logging;
+using Aunalytics.Sdk.Logging;
 using Newtonsoft.Json;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.DataContracts;
-using PluginOracleNet.Helper;
 using PluginOracleNet.API.Utility;
 
 // --- Sourced from Firebird Plugin version 1.0.0-beta ---

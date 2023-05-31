@@ -1,6 +1,6 @@
 using System;
 using System.Data;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Plugins;
 
 namespace PluginOracleNet.API.Discover
 {

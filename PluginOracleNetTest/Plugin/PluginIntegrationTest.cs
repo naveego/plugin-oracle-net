@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using PluginOracleNet.Helper;
 using PluginOracleNet.DataContracts;
 using Newtonsoft.Json;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Plugins;
 using Xunit;
 using System.Threading.Tasks;
 using Grpc.Core;
 using System.Linq;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.API.Replication;
-using Record = Naveego.Sdk.Plugins.Record;
+using Record = Aunalytics.Sdk.Plugins.Record;
 
 namespace PluginOracleNetTest.Plugin
 {
@@ -27,15 +25,18 @@ namespace PluginOracleNetTest.Plugin
         private static string TestSchemaName_2 = "<schema_name>.<table_name>02";
         private static int TestSampleCount_2 = 10;
         private static int TestPropertyCount_2 = 11;
+        
+        private static string TestRelatedSchemaID_1 = "\"<schema_name>\".\"RELENT_ACCOUNTS\"";
+        private static string TestRelatedSchemaID_2 = "\"<schema_name>\".\"RELENT_USERS\"";
 
-        private static string TestPropertyID = "\"ID\"";
-        private static string TestPropertyName = "ID";
+        private static readonly string TestPropertyID = "\"ID\"";
+        private static readonly string TestPropertyName = "ID";
 
-        internal static string SettingsHostname = "";
-        internal static string SettingsPassword = "";
-        internal static string SettingsPort = "";
-        internal static string SettingsServiceName = "";
-        internal static string SettingsUsername = "";
+        internal static readonly string SettingsHostname = "";
+        internal static readonly string SettingsPassword = "";
+        internal static readonly string SettingsPort = "";
+        internal static readonly string SettingsServiceName = "";
+        internal static readonly string SettingsUsername = "<schema_name>";
 
         private Settings GetSettings()
         {
@@ -334,8 +335,8 @@ namespace PluginOracleNetTest.Plugin
             var response = client.DiscoverSchemas(request);
 
             // assert
-            Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(44, response.Schemas.Count);
+            Assert.IsType<DiscoverSchemasResponse>(response); 
+            Assert.Equal(58, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             var schema = response.Schemas[1]; // Use testing table
@@ -351,8 +352,8 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal(TestPropertyName, property.Name);
             Assert.Equal("", property.Description);
             Assert.Equal(PropertyType.String, property.Type);
-            Assert.False(property.IsKey);
-            Assert.True(property.IsNullable);
+            Assert.True(property.IsKey);
+            Assert.False(property.IsNullable);
             
             // --- Detect Primary Key in last table ---
             // Use the test schema
@@ -423,8 +424,8 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal(TestPropertyName, property.Name);
             Assert.Equal("", property.Description);
             Assert.Equal(PropertyType.String, property.Type);
-            Assert.False(property.IsKey);
-            Assert.True(property.IsNullable);
+            Assert.True(property.IsKey);
+            Assert.False(property.IsNullable);
 
             // cleanup
             await channel.ShutdownAsync();
@@ -477,7 +478,7 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal("", property.Description);
             Assert.Equal(PropertyType.String, property.Type);
             Assert.False(property.IsKey);
-            Assert.True(property.IsNullable);
+            Assert.False(property.IsNullable);
 
             // cleanup
             await channel.ShutdownAsync();
@@ -527,6 +528,147 @@ namespace PluginOracleNetTest.Plugin
             await channel.ShutdownAsync();
             await server.ShutdownAsync();
         }
+        
+        [Fact]
+        public async Task DiscoverRelatedEntitiesTest()
+        {
+            // setup
+            Server server = new Server
+            {
+                Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+            };
+            server.Start();
+
+            var port = server.Ports.First().BoundPort;
+
+            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+            var client = new Publisher.PublisherClient(channel);
+
+            var connectRequest = GetConnectSettings();
+
+            var discoverRequest = new DiscoverSchemasRequest
+            {
+                Mode = DiscoverSchemasRequest.Types.Mode.All,
+                SampleSize = 10
+            };
+
+            // act
+            client.Connect(connectRequest);
+            var discoverResponse = client.DiscoverSchemas(discoverRequest);
+
+            var request = new DiscoverRelatedEntitiesRequest
+            {
+                ToRelate =
+                {
+                    discoverResponse.Schemas.Where(
+                        s => s.Id == TestRelatedSchemaID_1 || s.Id == TestRelatedSchemaID_2)
+                }
+            };
+
+            var response = client.DiscoverRelatedEntities(request);
+
+            try
+            {
+                // assert
+                Assert.IsType<DiscoverRelatedEntitiesResponse>(response);
+
+                var entity = response.RelatedEntities.First(e =>
+                    e.SourceResource == TestRelatedSchemaID_1
+                    && e.ForeignResource == TestRelatedSchemaID_2);
+                Assert.Equal(TestRelatedSchemaID_1, entity.SchemaId);
+                Assert.Equal(TestRelatedSchemaID_1, entity.SourceResource);
+                Assert.Equal("\"USER_ID\"", entity.SourceColumn);
+                Assert.Equal(TestRelatedSchemaID_2, entity.ForeignResource);
+                Assert.Equal("\"USER_ID\"", entity.ForeignColumn);
+                Assert.Equal("FOREIGN KEY", entity.RelationshipName);
+
+                var entity2 = response.RelatedEntities.First(e =>
+                    e.SourceResource == TestRelatedSchemaID_2
+                    && e.ForeignResource == TestRelatedSchemaID_1);
+                Assert.Equal(TestRelatedSchemaID_2, entity2.SchemaId);
+                Assert.Equal(TestRelatedSchemaID_2, entity2.SourceResource);
+                Assert.Equal("\"ACCOUNT_ID\", \"USER_ID\"", entity2.SourceColumn);
+                Assert.Equal(TestRelatedSchemaID_1, entity2.ForeignResource);
+                Assert.Equal("\"ACCOUNT_ID\", \"USER_ID\"", entity2.ForeignColumn);
+                Assert.Equal("MULTIPART FOREIGN KEY", entity2.RelationshipName);
+            }
+            finally
+            {
+                // cleanup
+                await channel.ShutdownAsync();
+                await server.ShutdownAsync();   
+            }
+        }
+
+        [Fact]
+        public async Task DiscoverAllRelatedEntitiesTest()
+        {
+            // setup
+            Server server = new Server
+            {
+                Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+            };
+            server.Start();
+
+            var port = server.Ports.First().BoundPort;
+
+            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+            var client = new Publisher.PublisherClient(channel);
+
+            var connectRequest = GetConnectSettings();
+
+            var discoverRequest = new DiscoverSchemasRequest
+            {
+                Mode = DiscoverSchemasRequest.Types.Mode.All,
+                SampleSize = 10
+            };
+
+            // act
+            client.Connect(connectRequest);
+            var discoverResponse = client.DiscoverSchemas(discoverRequest);
+
+            var request = new DiscoverRelatedEntitiesRequest
+            {
+                ToRelate = { discoverResponse.Schemas }
+            };
+
+            var response = client.DiscoverRelatedEntities(request);
+
+            try
+            {
+                // assert
+                Assert.IsType<DiscoverRelatedEntitiesResponse>(response);
+                Assert.Equal(response.RelatedEntities.Count, 3);
+
+                var entity = response.RelatedEntities.First(e =>
+                    e.SourceResource == TestRelatedSchemaID_1
+                    && e.ForeignResource == TestRelatedSchemaID_2);
+                Assert.Equal(TestRelatedSchemaID_1, entity.SchemaId);
+                Assert.Equal(TestRelatedSchemaID_1, entity.SourceResource);
+                Assert.Equal("\"USER_ID\"", entity.SourceColumn);
+                Assert.Equal(TestRelatedSchemaID_2, entity.ForeignResource);
+                Assert.Equal("\"USER_ID\"", entity.ForeignColumn);
+                Assert.Equal("FOREIGN KEY", entity.RelationshipName);
+
+                var entity2 = response.RelatedEntities.First(e =>
+                    e.SourceResource == TestRelatedSchemaID_2
+                    && e.ForeignResource == TestRelatedSchemaID_1);
+                Assert.Equal(TestRelatedSchemaID_2, entity2.SchemaId);
+                Assert.Equal(TestRelatedSchemaID_2, entity2.SourceResource);
+                Assert.Equal("\"ACCOUNT_ID\", \"USER_ID\"", entity2.SourceColumn);
+                Assert.Equal(TestRelatedSchemaID_1, entity2.ForeignResource);
+                Assert.Equal("\"ACCOUNT_ID\", \"USER_ID\"", entity2.ForeignColumn);
+                Assert.Equal("MULTIPART FOREIGN KEY", entity2.RelationshipName);
+            }
+            finally
+            {
+                // cleanup
+                await channel.ShutdownAsync();
+                await server.ShutdownAsync();   
+            }
+        }
 
         [Fact]
         public async Task ReadStreamTableSchemaTest()
@@ -570,7 +712,7 @@ namespace PluginOracleNetTest.Plugin
 
             var response = client.ReadStream(request);
             var responseStream = response.ResponseStream;
-            var records = new List<Naveego.Sdk.Plugins.Record>();
+            var records = new List<Aunalytics.Sdk.Plugins.Record>();
 
             while (await responseStream.MoveNext())
             {
@@ -637,7 +779,7 @@ namespace PluginOracleNetTest.Plugin
 
             var response = client.ReadStream(request);
             var responseStream = response.ResponseStream;
-            var records = new List<Naveego.Sdk.Plugins.Record>();
+            var records = new List<Aunalytics.Sdk.Plugins.Record>();
 
             while (await responseStream.MoveNext())
             {
@@ -705,7 +847,7 @@ namespace PluginOracleNetTest.Plugin
 
             var response = client.ReadStream(request);
             var responseStream = response.ResponseStream;
-            var records = new List<Naveego.Sdk.Plugins.Record>();
+            var records = new List<Aunalytics.Sdk.Plugins.Record>();
 
             while (await responseStream.MoveNext())
             {
@@ -902,8 +1044,8 @@ namespace PluginOracleNetTest.Plugin
                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
                     {
                         SchemaName = "<schema_name>",
-                        GoldenTableName = "gr_test",
-                        VersionTableName = "vr_test"
+                        GoldenTableName = "gr_ReplicationTest",
+                        VersionTableName = "vr_ReplicationTest"
                     })
                 },
                 DataVersions = new DataVersions
@@ -922,7 +1064,6 @@ namespace PluginOracleNetTest.Plugin
                     Action = Record.Types.Action.Upsert,
                     CorrelationId = "test",
                     RecordId = "record1",
-                    //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}",
                     DataJson = @"{
     ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
     ""FIRST_NAME"":""Test"",
@@ -941,7 +1082,6 @@ namespace PluginOracleNetTest.Plugin
                         new RecordVersion
                         {
                             RecordId = "version1",
-                            //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}"
                             DataJson = @"{
     ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
     ""FIRST_NAME"":""Test"",
@@ -1022,8 +1162,8 @@ namespace PluginOracleNetTest.Plugin
                         new ConfigureReplicationFormData
                         {
                             SchemaName = "<schema_name>",
-                            GoldenTableName = "gr_test",
-                            VersionTableName = "vr_test"
+                            GoldenTableName = "gr_ReplicationTest",
+                            VersionTableName = "vr_ReplicationTest"
                         }
                     )
                 },

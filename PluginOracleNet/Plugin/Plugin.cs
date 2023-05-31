@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Grpc.Core;
-using Naveego.Sdk.Logging;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Logging;
+using Aunalytics.Sdk.Plugins;
 using Newtonsoft.Json;
 using PluginOracleNet.API.Discover;
 using PluginOracleNet.API.Factory;
@@ -225,6 +225,40 @@ namespace PluginOracleNet.Plugin
             {
                 Logger.Error(e, e.Message, context);
                 return new DiscoverSchemasResponse();
+            }
+        }
+        
+        /// <summary>
+        /// Discovers related entities to input schemas
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public override async Task<DiscoverRelatedEntitiesResponse> DiscoverRelatedEntities(DiscoverRelatedEntitiesRequest request, ServerCallContext context)
+        {
+            Logger.SetLogPrefix("discover-related");
+            Logger.Info("Discovering Related Entities...");
+
+            var inputSchemas = request.ToRelate;
+
+            var discoverRelatedEntitiesResponse = new DiscoverRelatedEntitiesResponse();
+            
+            try
+            {
+                Logger.Info($"Related entity schemas attempted: {inputSchemas.Count}");
+
+                var relatedEntities = Discover.GetAllRelatedEntities(_connectionFactory, inputSchemas);
+
+                discoverRelatedEntitiesResponse.RelatedEntities.AddRange(await relatedEntities.ToListAsync());
+
+                // return all related entities 
+                Logger.Info($"Related entities returned: {discoverRelatedEntitiesResponse.RelatedEntities.Count}");
+                return discoverRelatedEntitiesResponse;
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e, e.Message, context);
+                return new DiscoverRelatedEntitiesResponse();
             }
         }
 

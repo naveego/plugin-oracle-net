@@ -1,5 +1,5 @@
 using System;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Plugins;
 
 namespace PluginOracleNet.DataContracts
 {

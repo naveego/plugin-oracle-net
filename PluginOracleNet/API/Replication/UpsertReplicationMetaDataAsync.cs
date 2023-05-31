@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Naveego.Sdk.Logging;
+using Aunalytics.Sdk.Logging;
 using Newtonsoft.Json;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.API.Utility;

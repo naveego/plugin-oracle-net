@@ -1,14 +1,10 @@
 using System;
-using System.Globalization;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Naveego.Sdk.Logging;
-using Naveego.Sdk.Plugins;
+using Aunalytics.Sdk.Logging;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.API.Utility;
 using PluginOracleNet.DataContracts;
-using PluginOracleNet.Helper;
 
 // --- Sourced from Firebird Plugin version 1.0.0-beta ---
 
@@ -16,27 +12,7 @@ namespace PluginOracleNet.API.Replication
 {
     public static partial class Replication
     {
-//         private static readonly string EnsureTableQuery = @"SELECT COUNT(*) as c
-// FROM information_schema.tables 
-// WHERE table_schema = '{0}' 
-// AND table_name = '{1}'";
-
-        // Source: https://stackoverflow.com/questions/18114458/fastest-way-to-determine-if-record-exists
-
-        private static readonly string EnsureTableQuery = @"
-SELECT COUNT(*) AS C
-FROM SYS.DBA_TABLES t
-WHERE t.TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
-    AND t.TABLE_NAME = '{1}' AND t.OWNER = '{0}'
-";
-
-//         private static readonly string QueryCreateTable = @"
-// CREATE TABLE ""{0}""
-// (
-//     ""{1}"" ID INT NOT NULL
-// )";
-
-        // private static readonly string EnsureTableQuery = @"SELECT * FROM {0}.{1}";
+        private static readonly string EnsureTableQuery = "SELECT COUNT(*) FROM \"{0}\".\"{1}\"";
 
         public static async Task<bool> TableExistsAsync(IConnectionFactory connFactory, ReplicationTable table)
         {
@@ -50,11 +26,14 @@ WHERE t.TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
                     $"Checking for Table: {string.Format(EnsureTableQuery, table.SchemaName.ToAllCaps(), table.TableName)}");
                 var cmd = connFactory.GetCommand(
                     string.Format(EnsureTableQuery, table.SchemaName.ToAllCaps(), table.TableName), conn);
-                var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                var count = (decimal)reader.GetValueById("C");
+                await cmd.ExecuteNonQueryAsync();
 
-                return count > 0;
+                return true;
+            }
+            catch (Exception e)
+            {
+                if (e.Message.Contains("table or view does not exist")) return false;
+                else throw e;
             }
             finally
             {
@@ -74,14 +53,16 @@ WHERE t.TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
                     $"Checking for Table: {string.Format(EnsureTableQuery, table.SchemaName.ToAllCaps(), table.TableName)}");
                 var cmd = connFactory.GetCommand(
                     string.Format(EnsureTableQuery, table.SchemaName.ToAllCaps(), table.TableName), conn);
-                var reader = await cmd.ExecuteReaderAsync();
-                await reader.ReadAsync();
-                var count = (decimal)reader.GetValueById("C");
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception e)
+            {
+                if (!e.Message.Contains("table or view does not exist"))
+                {
+                    throw new Exception(string.Format("Unable to ensure table {0}.{1}", table.SchemaName, table.TableName), e.InnerException);
+                }
 
-                await conn.CloseAsync();
-                
-                // create schema if not exists
-                if (count <= 0)
+                try
                 {
                     // create table statement
                     var querySb = new StringBuilder($@"CREATE TABLE {Utility.Utility.GetSafeName(table.SchemaName.ToAllCaps())}");
@@ -123,11 +104,13 @@ WHERE t.TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
                     var query = querySb.ToString();
                     Logger.Info($"Creating Table: {query}");
 
-                    await conn.OpenAsync();
-
                     var cmd2 = connFactory.GetCommand(query, conn);
 
                     await cmd2.ExecuteNonQueryAsync();
+                }
+                catch (Exception cEx)
+                {
+                    throw new Exception(string.Format("Unable to ensure table {0}.{1}", table.SchemaName, table.TableName), cEx.InnerException);
                 }
             }
             finally
